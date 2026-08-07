@@ -5,8 +5,8 @@
                     "dist:portable":  "electron-builder --win portable",
                     "start":  "electron ."
                 },
-    "description":  "LR Glass 閻犲鍟虫竟濠傤啅閵夈儱寰?- Lightroom 濡炲瀛╅悧绋款浖瀹€鍕〃閻犲鍟虫竟濠冩償閺冨倹鏆?(Electron)",
-    "version":  "2.0.0-lite",
+    "description":  "LR Glass 闁荤姴顑呴崯铏珶婵犲偆鍟呴柕澶堝劚瀵?- Lightroom 婵＄偛顑呯€涒晠鎮х粙娆炬禆鐎光偓閸曨剚銆冮柣鐘差儏閸熻櫕绔熸繝鍐╁劅闁哄啫鍊归弳?(Electron)",
+    "version":  "2.1.0-lite",
     "author":  "X1a0ye",
     "name":  "lr-glass",
     "main":  "main.js",
