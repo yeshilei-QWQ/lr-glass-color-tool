@@ -10,16 +10,17 @@
 
 | 版本 | 说明 | 位置 |
 | --- | --- | --- |
-| **V1.6**（最新） | Electron 桌面应用版 | [`/desktop`](./desktop/) |
+| **V2.0**（最新） | Windows 便携版 exe（免安装，双击即用） | [`/desktop/dist`](./desktop/dist/) |
+| **V1.6** | Electron 桌面应用版 | [`/desktop`](./desktop/) |
 | **V1.5** | 模块化重构版，脚本拆分为独立 JS 文件 | [`/v1.5`](./v1.5/) |
 | **V1** | 首个完整版（单文件 HTML） | `/lr-color-tool.html` |
 | **V1 备份** | V1 存档 | `/lr-color-tool-V1-backup.html` |
 
 ---
 
-## 最新版本（V1.5）
+## 最新版本（V2.0）
 
-> `/v1.5` — 模块化重构
+> `/desktop` — Windows 便携版，详见 [desktop/README](./desktop/README.md)
 
 V1 是约 64KB 的单文件（两个 `<script>` 块相互覆盖），V1.5 拆分为 **HTML + 10 个 JS 模块**，为后续扩展与 Electron 封装打好结构基础。
 
