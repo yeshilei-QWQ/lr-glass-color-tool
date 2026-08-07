@@ -1,14 +1,46 @@
 {
-    "name":  "lr-glass-app",
-    "version":  "1.5.0",
-    "description":  "LR Glass 调色工具 - Lightroom 风格桌面调色应用 (Electron)",
-    "main":  "main.js",
     "scripts":  {
+                    "dist:nsis":  "electron-builder --win nsis",
+                    "dist":  "electron-builder --win",
+                    "dist:portable":  "electron-builder --win portable",
                     "start":  "electron ."
                 },
+    "description":  "LR Glass 璋冭壊宸ュ叿 - Lightroom 椋庢牸妗岄潰璋冭壊搴旂敤 (Electron)",
+    "version":  "2.0.0",
     "author":  "X1a0ye",
-    "license":  "MIT",
+    "name":  "lr-glass",
+    "main":  "main.js",
     "devDependencies":  {
-                            "electron":  "^31.0.0"
-                        }
+                            "electron":  "^31.0.0",
+                            "electron-builder":  "^26.15.3"
+                        },
+    "license":  "MIT",
+    "build":  {
+                  "directories":  {
+                                      "buildResources":  "build",
+                                      "output":  "dist"
+                                  },
+                  "files":  [
+                                "index.html",
+                                "main.js",
+                                "preload.js",
+                                "package.json",
+                                "src/**/*"
+                            ],
+                  "productName":  "LR Glass",
+                  "win":  {
+                              "target":  [
+                                             "nsis",
+                                             "portable"
+                                         ]
+                          },
+                  "appId":  "com.x1a0ye.lrglass",
+                  "nsis":  {
+                               "oneClick":  false,
+                               "createDesktopShortcut":  true,
+                               "shortcutName":  "LR Glass",
+                               "createStartMenuShortcut":  true,
+                               "allowToChangeInstallationDirectory":  true
+                           }
+              }
 }
