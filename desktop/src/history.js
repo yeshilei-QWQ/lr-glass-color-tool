@@ -22,6 +22,7 @@ function pushHistory(desc) {
 function restoreHistory(idx) {
   if (idx < 0 || idx >= history.length) return;
   isRestoring = true;
+  exitPreview();
   histIndex = idx;
   const h = history[idx];
   if (h.layers && h.layers.length) {
