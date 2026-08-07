@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LR Glass 调色工具 · V2.0 by X1a0ye</title>
+<title>LR Glass 调色工具 · V2-lite by X1a0ye</title>
 <style>
   /* iOS 磨砂玻璃 */
   :root {
@@ -253,22 +253,6 @@
   .history-step .h-desc { flex: 1; }
   .history-step .h-val { color: var(--accent); font-family: "SF Mono", monospace; font-size: 11px; }
 
-  /* API 区 */
-  .api-box { margin-top: 14px; }
-  .api-box textarea { font-family: "SF Mono", Consolas, monospace; font-size: 12px; min-height: 54px; }
-  .api-list { display: flex; flex-direction: column; gap: 6px; max-height: 170px; overflow-y: auto; margin-top: 8px; }
-  .api-item {
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px; padding: 8px 10px; font-size: 12px;
-  }
-  .api-item .api-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-  .api-item .api-name { font-weight: 600; flex: 1; }
-  .api-item .api-desc { color: var(--text-tertiary); font-size: 11px; }
-  .api-badge {
-    font-size: 10px; padding: 2px 8px; border-radius: 12px;
-    background: rgba(10,132,255,0.2); color: var(--accent-hover);
-  }
-
   /* Toast */
   .toast {
     position: fixed; bottom: 26px; left: 50%;
@@ -286,7 +270,7 @@
 </head>
 <body>
 <header>
-  <div class="app-title"><span class="dota"></span> LR Glass 调色工具 <small style="font-weight:400;font-size:11px;color:var(--text-tertiary);margin-left:6px;">V2.0 by X1a0ye</small></div>
+  <div class="app-title"><span class="dota"></span> LR Glass 调色工具 <small style="font-weight:400;font-size:11px;color:var(--text-tertiary);margin-left:6px;">V2-lite by X1a0ye</small></div>
   <button class="btn primary" onclick="document.getElementById('fileInput').click()">打开图片</button>
   <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFile(event)">
   <button class="btn" onclick="undoAction()" id="undoBtn" disabled>撤销</button>
@@ -388,7 +372,8 @@
     </div>
 
     <div class="sidebar-title">我的预设 <small id="presetCount"></small></div>
-    <input type="text" class="field-input" id="searchPreset" placeholder="搜索预设..." oninput="renderPresets()">
+
+
     <ul class="preset-list" id="presetList"></ul>
     <div id="presetEmpty" style="color:var(--text-tertiary);text-align:center;padding:14px;font-size:13px;">暂无预设，保存一个吧！</div>
 
@@ -400,20 +385,6 @@
     </div>
     <ul class="history-list" id="historyList"></ul>
     <div id="historyEmpty" style="color:var(--text-tertiary);text-align:center;padding:10px;font-size:12px;">尚无历史步骤</div>
-
-    <div class="sidebar-title">API 接入区</div>
-    <div class="api-box">
-      <textarea id="apiBody" class="field-input" placeholder="粘贴 JSON 参数，如：{\n  &quot;exposure&quot;: 0.5,\n  &quot;contrast&quot;: 20\n}  （键名对应滑块 id）"></textarea>
-      <div style="display:flex; gap:6px; margin-top:8px;">
-        <button class="btn primary" onclick="applyApiJson()">应用参数</button>
-        <button class="btn" onclick="fetchApiEndpoints()">调用远端配置</button>
-      </div>
-      <input type="text" id="apiUrl" class="field-input" style="margin-top:8px;" placeholder="可选：远端 API 地址（返回 JSON 参数对象）">
-    </div>
-    <div class="sidebar-title">已注册 API 接口</div>
-    <div class="api-list" id="apiList"></div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
@@ -429,19 +400,6 @@
 <script src="src/adjust.js"></script>
 <script src="src/app.js"></script>
 
-<style>
-  /* 图层面板样式 */
-  .layer-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; transition: border-color .15s, background .15s; }
-  .layer-item.active { border-color: var(--accent); background: rgba(10,132,255,0.12); }
-  .layer-item:hover { background: rgba(255,255,255,0.1); }
-  .layer-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .layer-name { flex: 1; font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .layer-sub { display: flex; flex-direction: column; gap: 6px; }
-  .layer-sub label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--text-secondary); }
-  .layer-sub select { background: rgba(255,255,255,0.1); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 6px; padding: 3px 6px; font-size: 11px; max-width: 120px; }
-  .layer-sub input[type=range] { flex: 1; min-width: 60px; height: 4px; -webkit-appearance: none; background: rgba(255,255,255,0.14); border-radius: 2px; }
-  .layer-sub input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); }
-  #layerList { max-height: 30vh; overflow-y: auto; }
-</style>
+
 </body>
 </html>
