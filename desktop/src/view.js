@@ -58,6 +58,7 @@ function setupCanvas() {
 // ================== 视图模式 ==================
 function setViewMode(mode, btn) {
   viewMode = mode;
+  exitPreview();
   document.querySelectorAll('.view-controls .btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   document.getElementById('splitHint').style.display = mode === 'split' ? 'block' : 'none';
@@ -77,6 +78,7 @@ function setViewMode(mode, btn) {
 
 function resetSplit() {
   splitRatio = 0.5;
+  exitPreview();
   document.getElementById('compareLeft').style.width = '50%';
   document.getElementById('compareDivider').style.left = '50%';
   render();
