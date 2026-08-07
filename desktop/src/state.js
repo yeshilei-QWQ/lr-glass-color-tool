@@ -3,6 +3,11 @@ const API_KEY = 'lr_glass_apis_v1';
 
 let sourceData = null;
 let imageWidth = 0, imageHeight = 0;
+// 降采样预览数据（用于拖动滑块时的流畅预览）
+let previewData = null;
+let previewWidth = 0, previewHeight = 0;
+// true = 当前正在用降采样预览渲染；松手后切回全分辨率精确渲染
+let isPreviewRender = false;
 let viewMode = 'original';
 let splitRatio = 0.5;
 let lastToast = null;
