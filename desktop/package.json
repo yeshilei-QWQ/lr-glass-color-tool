@@ -5,7 +5,7 @@
                     "dist:portable":  "electron-builder --win portable",
                     "start":  "electron ."
                 },
-    "description":  "LR Glass 闁荤姴顑呴崯铏珶婵犲偆鍟呴柕澶堝劚瀵?- Lightroom 婵＄偛顑呯€涒晠鎮х粙娆炬禆鐎光偓閸曨剚銆冮柣鐘差儏閸熻櫕绔熸繝鍐╁劅闁哄啫鍊归弳?(Electron)",
+    "description":  "LR Glass 闂佽崵濮撮鍛村疮閾忣偆鐝跺┑鐘插亞閸熷懘鏌曟径鍫濆姎鐎?- Lightroom 濠碉紕鍋涢鍛偓娑掓櫊閹呯矙濞嗙偓绂嗛悗鍏夊亾闁告洦鍓氶妴鍐煟閻樺樊鍎忛柛鐔绘珪缁旂喐绻濋崘鈺佸妳闂佸搫鍟崐褰掑汲?(Electron)",
     "version":  "2.1.0-lite",
     "author":  "X1a0ye",
     "name":  "lr-glass",
@@ -25,7 +25,8 @@
                                 "main.js",
                                 "preload.js",
                                 "package.json",
-                                "src/**/*"
+                                "src/**/*",
+                                "icon.png"
                             ],
                   "productName":  "LR Glass",
                   "win":  {
