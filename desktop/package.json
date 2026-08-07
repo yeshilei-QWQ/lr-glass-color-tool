@@ -1,0 +1,14 @@
+{
+    "name":  "lr-glass-app",
+    "version":  "1.5.0",
+    "description":  "LR Glass 调色工具 - Lightroom 风格桌面调色应用 (Electron)",
+    "main":  "main.js",
+    "scripts":  {
+                    "start":  "electron ."
+                },
+    "author":  "X1a0ye",
+    "license":  "MIT",
+    "devDependencies":  {
+                            "electron":  "^31.0.0"
+                        }
+}
