@@ -28,7 +28,6 @@ function restoreHistory(idx) {
     layers = h.layers;
     activeLayerIndex = Math.min(h.active || 0, layers.length - 1);
     params = layers[activeLayerIndex].params;
-    renderLayerPanel();
   } else {
     Object.keys(params).forEach(function(k){ params[k] = 0; });
     Object.assign(params, h.snap || {});
