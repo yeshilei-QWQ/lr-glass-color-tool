@@ -15,6 +15,7 @@ function resetAll(record) {
   if (!sourceData) { showToast('请先打开图片'); return; }
   Object.keys(params).forEach(function(k){ if (k !== 'blur') params[k] = 0; });
   syncSlidersFromParams();
+  exitPreview();
   if (record) pushHistory('重置全部');
   if (sourceData) render();
 }
@@ -73,6 +74,7 @@ function applyPreset(id) {
   if (!sourceData) { showToast('请先打开图片'); return; }
   Object.keys(p.params).forEach(function(k){ params[k] = p.params[k]; });
   syncSlidersFromParams();
+  exitPreview();
   pushHistory('应用预设：' + p.name);
   render();   showToast('已应用：' + p.name);
 }
