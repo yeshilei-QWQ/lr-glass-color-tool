@@ -14,6 +14,7 @@ function createWindow() {
     minHeight: 700,
     title: 'LR Glass 调色工具',
     backgroundColor: '#1a1a1a',
+    icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
