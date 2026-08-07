@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LR Glass 调色工具 · V1 by X1a0ye</title>
+<style>
+  /* iOS 磨砂玻璃 */
+  :root {
+    --glass-bg: rgba(255,255,255,0.12);
+    --glass-border: rgba(255,255,255,0.22);
+    --text-primary: #f5f5f7;
+    --text-secondary: rgba(255,255,255,0.65);
+    --text-tertiary: rgba(255,255,255,0.38);
+    --accent: #0a84ff;
+    --accent-hover: #3395ff;
+    --danger: #ff453a;
+    --shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: radial-gradient(1200px 800px at 20% 10%, #3a3d52 0%, #2b2d3a 40%, #1a1b24 100%);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hidden { display: none !important; }
+
+  /* 按钮 */
+  .btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 7px 14px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all .15s ease;
+    white-space: nowrap;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .btn:hover { background: rgba(255,255,255,0.2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.danger:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .btn:active { transform: scale(.96); }
+
+  /* 顶部栏 */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: rgba(30,30,40,0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    z-index: 50;
+    flex-wrap: wrap;
+  }
+  header .app-title {
+    font-size: 15px; font-weight: 600; letter-spacing: .3px;
+    display: flex; align-items: center; gap: 8px; white-space: nowrap; margin-right: 8px;
+  }
+  header .app-title .dota {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff9f0a, #ff453a, #bf5af2, #0a84ff, #30d158);
+  }
+  header .spacer { flex: 1; }
+
+  /* 三段式 LR 布局 */
+  .workspace {
+    display: grid;
+    grid-template-columns: 288px 1fr 320px;
+    flex: 1;
+    overflow: hidden;
+    gap: 10px;
+    padding: 10px;
+  }
+  .sidebar-left, .sidebar-right {
+    border-radius: 14px;
+    overflow-y: auto;
+    padding: 14px;
+    background: rgba(25,25,33,0.5);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid var(--glass-border);
+  }
+  .viewport {
+    border-radius: 14px;
+    position: relative;
+    background: rgba(10,10,14,0.85);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }
+
+  /* 调色分组 */
+  .panel-group { margin-bottom: 16px; }
+  .panel-group > h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-tertiary); margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .panel-group > h3 .reset {
+    color: var(--accent); cursor: pointer; font-size: 11px;
+    text-transform: none; letter-spacing: 0; background: none; border: none;
+  }
+  .panel-group > h3 .reset:hover { text-decoration: underline; }
+
+  /* 滑块 */
+  .control { margin-bottom: 9px; }
+  .control-header {
+    display: flex; justify-content: space-between; margin-bottom: 2px;
+    font-size: 12px; color: var(--text-secondary);
+  }
+  .control-header .value {
+    color: var(--accent); font-family: "SF Mono", Consolas, monospace; font-size: 11px;
+  }
+  .control input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,0.14); outline: none; cursor: pointer;
+  }
+  .control input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--accent); cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.5);
+  }
+
+  canvas { display: block; }
+  .canvas-wrap { position: relative; max-width: 100%; max-height: 100%; }
+
+  .view-controls {
+    position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; background: rgba(30,30,40,0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    padding: 6px 10px; border-radius: 12px;
+    border: 1px solid var(--glass-border); z-index: 10;
+  }
+  .view-controls .btn { font-size: 12px; padding: 5px 11px; }
+  .view-controls .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    color: var(--text-secondary); text-align: center;
+  }
+  .empty-state .icon {
+    width: 80px; height: 80px; border-radius: 22px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+    display: flex; align-items: center; justify-content: center; font-size: 34px;
+  }
+  .empty-state p { font-size: 14px; line-height: 1.8; }
+  .drop-overlay {
+    position: absolute; inset: 0;
+    border: 2.5px dashed var(--accent);
+    background: rgba(10,132,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--accent);
+    pointer-events: none; border-radius: 14px; z-index: 20;
+  }
+
+  .histogram {
+    position: absolute; top: 14px; right: 14px; width: 200px; height: 80px;
+    background: rgba(0,0,0,0.5); border-radius: 10px; padding: 6px; z-index: 10;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .histogram canvas { width: 100%; height: 100%; }
+  .img-info {
+    position: absolute; top: 14px; left: 14px;
+    background: rgba(0,0,0,0.5); padding: 7px 12px; border-radius: 10px;
+    font-size: 12px; font-family: "SF Mono", Consolas, monospace; z-index: 10;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .compare-divider {
+    position: absolute; top: 0; bottom: 0; width: 2px; background: #fff;
+    cursor: ew-resize; z-index: 15; display: none;
+  }
+  .compare-left {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 50%;
+    overflow: hidden; z-index: 5; display: none;
+  }
+  .compare-left .tag {
+    position: absolute; top: 14px; left: 14px;
+    background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 8px;
+    font-size: 11px; color: #fff; z-index: 6;
+  }
+
+  /* 右侧 */
+  .sidebar-title {
+    font-size: 13px; font-weight: 600; margin: 12px 0 10px; letter-spacing: .3px;
+  }
+  .sidebar-title small { color: var(--text-tertiary); font-weight: 400; font-size: 11px; margin-left: 6px; }
+  .preset-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+  .field-input {
+    background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border);
+    color: var(--text-primary); padding: 9px 12px; border-radius: 10px;
+    font-size: 13px; width: 100%; transition: border .15s;
+  }
+  .field-input::placeholder { color: var(--text-tertiary); }
+  .field-input:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.12); }
+
+  .preset-list { list-style: none; display: flex; flex-direction: column; gap: 6px; max-height: 32vh; overflow-y: auto; }
+  .preset-item {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 8px 10px; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .preset-item:hover { border-color: var(--accent); background: rgba(255,255,255,0.1); }
+  .preset-item .p-info { flex: 1; min-width: 0; }
+  .preset-item .p-name { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .preset-item .p-meta { font-size: 11px; color: var(--text-tertiary); font-family: "SF Mono", Consolas, monospace; }
+  .preset-item .p-actions { display: flex; gap: 2px; flex-shrink: 0; }
+  .icon-btn {
+    background: transparent; border: none; color: var(--text-tertiary);
+    cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 6px;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.12); color: var(--text-primary); }
+  .tag-list { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tag {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-secondary); padding: 3px 11px; border-radius: 20px; font-size: 12px; cursor: pointer;
+  }
+  .tag:hover { background: rgba(255,255,255,0.16); }
+  .tag.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* 历史步骤 */
+  .hist-bar { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .hist-bar .btn { font-size: 12px; padding: 5px 10px; }
+  .history-list { list-style: none; max-height: 30vh; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+  .history-step {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border-radius: 8px; font-size: 12px;
+    color: var(--text-secondary); cursor: pointer; border: 1px solid transparent;
+  }
+  .history-step:hover { background: rgba(255,255,255,0.07); }
+  .history-step.current {
+    background: rgba(10,132,255,0.16);
+    border-color: var(--accent); color: var(--text-primary); font-weight: 500;
+  }
+  .history-step .h-index { color: var(--text-tertiary); font-family: "SF Mono", monospace; font-size: 10px; width: 16px; }
+  .history-step .h-desc { flex: 1; }
+  .history-step .h-val { color: var(--accent); font-family: "SF Mono", monospace; font-size: 11px; }
+
+  /* API 区 */
+  .api-box { margin-top: 14px; }
+  .api-box textarea { font-family: "SF Mono", Consolas, monospace; font-size: 12px; min-height: 54px; }
+  .api-list { display: flex; flex-direction: column; gap: 6px; max-height: 170px; overflow-y: auto; margin-top: 8px; }
+  .api-item {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 8px 10px; font-size: 12px;
+  }
+  .api-item .api-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .api-item .api-name { font-weight: 600; flex: 1; }
+  .api-item .api-desc { color: var(--text-tertiary); font-size: 11px; }
+  .api-badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 12px;
+    background: rgba(10,132,255,0.2); color: var(--accent-hover);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 26px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(40,40,50,0.85); backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border); color: var(--text-primary);
+    padding: 11px 22px; border-radius: 12px; box-shadow: var(--shadow);
+    font-size: 13px; opacity: 0; transition: all .3s ease;
+    pointer-events: none; z-index: 1000;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 1000px) { .workspace { grid-template-columns: 1fr; } .sidebar-right { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="app-title"><span class="dota"></span> LR Glass 调色工具 <small style="font-weight:400;font-size:11px;color:var(--text-tertiary);margin-left:6px;">V1 by X1a0ye</small></div>
+  <button class="btn primary" onclick="document.getElementById('fileInput').click()">打开图片</button>
+  <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFile(event)">
+  <button class="btn" onclick="undoAction()" id="undoBtn" disabled>撤销</button>
+  <button class="btn" onclick="redoAction()" id="redoBtn" disabled>重做</button>
+  <button class="btn" onclick="resetAll(true)">重置全部</button>
+  <button class="btn" onclick="downloadImage()">导出图片</button>
+  <span class="spacer"></span>
+</header>
+
+<div class="workspace">
+  <!-- 左侧：调色面板 -->
+  <div class="sidebar-left">
+    <div class="panel-group">
+      <h3>基础调整 <button class="reset" onclick="resetGroup(['exposure','contrast','highlights','shadows','whites','blacks'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>曝光</span><span class="value" id="v-exposure">0</span></div><input type="range" id="exposure" min="-2" max="2" step="0.05" value="0" data-label="曝光"></div>
+      <div class="control"><div class="control-header"><span>对比度</span><span class="value" id="v-contrast">0</span></div><input type="range" id="contrast" min="-100" max="100" step="1" value="0" data-label="对比度"></div>
+      <div class="control"><div class="control-header"><span>高光</span><span class="value" id="v-highlights">0</span></div><input type="range" id="highlights" min="-100" max="100" step="1" value="0" data-label="高光"></div>
+      <div class="control"><div class="control-header"><span>阴影</span><span class="value" id="v-shadows">0</span></div><input type="range" id="shadows" min="-100" max="100" step="1" value="0" data-label="阴影"></div>
+      <div class="control"><div class="control-header"><span>白色色阶</span><span class="value" id="v-whites">0</span></div><input type="range" id="whites" min="-100" max="100" step="1" value="0" data-label="白色"></div>
+      <div class="control"><div class="control-header"><span>黑色色阶</span><span class="value" id="v-blacks">0</span></div><input type="range" id="blacks" min="-100" max="100" step="1" value="0" data-label="黑色"></div>
+    </div>
+    <div class="panel-group">
+      <h3>白平衡 <button class="reset" onclick="resetGroup(['temp','tint'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>色温</span><span class="value" id="v-temp">0</span></div><input type="range" id="temp" min="-100" max="100" step="1" value="0" data-label="色温"></div>
+      <div class="control"><div class="control-header"><span>色调</span><span class="value" id="v-tint">0</span></div><input type="range" id="tint" min="-100" max="100" step="1" value="0" data-label="色调"></div>
+    </div>
+    <div class="panel-group">
+      <h3>颜色 <button class="reset" onclick="resetGroup(['saturation','vibrance'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>饱和度</span><span class="value" id="v-saturation">0</span></div><input type="range" id="saturation" min="-100" max="100" step="1" value="0" data-label="饱和度"></div>
+      <div class="control"><div class="control-header"><span>自然饱和度</span><span class="value" id="v-vibrance">0</span></div><input type="range" id="vibrance" min="-100" max="100" step="1" value="0" data-label="自然饱和度"></div>
+    </div>
+    <div class="panel-group">
+      <h3>效果 <button class="reset" onclick="resetGroup(['clarity','grain','vignette'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>清晰度</span><span class="value" id="v-clarity">0</span></div><input type="range" id="clarity" min="-100" max="100" step="1" value="0" data-label="清晰度"></div>
+      <div class="control"><div class="control-header"><span>颗粒</span><span class="value" id="v-grain">0</span></div><input type="range" id="grain" min="0" max="100" step="1" value="0" data-label="颗粒"></div>
+      <div class="control"><div class="control-header"><span>暗角</span><span class="value" id="v-vignette">0</span></div><input type="range" id="vignette" min="-100" max="100" step="1" value="0" data-label="暗角"></div>
+    </div>
+    <div class="panel-group">
+      <h3>红色通道 <button class="reset" onclick="resetGroup(['red-h','red-s','red-l'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>色相</span><span class="value" id="v-red-h">0</span></div><input type="range" id="red-h" min="-100" max="100" step="1" value="0" data-label="红色色相"></div>
+      <div class="control"><div class="control-header"><span>饱和度</span><span class="value" id="v-red-s">0</span></div><input type="range" id="red-s" min="-100" max="100" step="1" value="0" data-label="红色饱和度"></div>
+      <div class="control"><div class="control-header"><span>明度</span><span class="value" id="v-red-l">0</span></div><input type="range" id="red-l" min="-100" max="100" step="1" value="0" data-label="红色明度"></div>
+    </div>
+    <div class="panel-group">
+      <h3>绿色通道 <button class="reset" onclick="resetGroup(['green-h','green-s','green-l'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>色相</span><span class="value" id="v-green-h">0</span></div><input type="range" id="green-h" min="-100" max="100" step="1" value="0" data-label="绿色色相"></div>
+      <div class="control"><div class="control-header"><span>饱和度</span><span class="value" id="v-green-s">0</span></div><input type="range" id="green-s" min="-100" max="100" step="1" value="0" data-label="绿色饱和度"></div>
+      <div class="control"><div class="control-header"><span>明度</span><span class="value" id="v-green-l">0</span></div><input type="range" id="green-l" min="-100" max="100" step="1" value="0" data-label="绿色明度"></div>
+    </div>
+    <div class="panel-group">
+      <h3>蓝色通道 <button class="reset" onclick="resetGroup(['blue-h','blue-s','blue-l'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>色相</span><span class="value" id="v-blue-h">0</span></div><input type="range" id="blue-h" min="-100" max="100" step="1" value="0" data-label="蓝色色相"></div>
+      <div class="control"><div class="control-header"><span>饱和度</span><span class="value" id="v-blue-s">0</span></div><input type="range" id="blue-s" min="-100" max="100" step="1" value="0" data-label="蓝色饱和度"></div>
+      <div class="control"><div class="control-header"><span>明度</span><span class="value" id="v-blue-l">0</span></div><input type="range" id="blue-l" min="-100" max="100" step="1" value="0" data-label="蓝色明度"></div>
+    </div>
+  </div>
+  <!-- 中央预览 -->
+  <div class="viewport" id="viewport"
+       ondragover="event.preventDefault(); document.getElementById('dropOverlay').classList.remove('hidden')"
+       ondragleave="event.preventDefault(); document.getElementById('dropOverlay').classList.add('hidden')"
+       ondrop="handleDrop(event)">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">IMG</div>
+      <p>拖拽图片到这里，或点击「打开图片」开始调色</p>
+    </div>
+    <div class="drop-overlay hidden" id="dropOverlay">松开鼠标导入图片</div>
+    <div class="canvas-wrap hidden" id="canvasWrap">
+      <div class="img-info" id="imgInfo"></div>
+      <div class="histogram"><canvas id="histogramCanvas"></canvas></div>
+      <div id="compareLeft" class="compare-left">
+        <canvas id="origCanvas"></canvas>
+        <div class="tag">原图</div>
+      </div>
+      <canvas id="mainCanvas"></canvas>
+      <div class="compare-divider" id="compareDivider"></div>
+    </div>
+    <div class="view-controls">
+      <button class="btn active" id="viewOriginal" onclick="setViewMode('original', this)">原图</button>
+      <button class="btn" id="viewEdited" onclick="setViewMode('edited', this)">调整</button>
+      <button class="btn" id="viewSplit" onclick="setViewMode('split', this)">对比</button>
+    </div>
+    <div style="position:absolute;bottom:64px;right:14px;z-index:25;display:none;" id="splitHint">
+      <button class="btn" onclick="resetSplit()">重置分割线</button>
+    </div>
+  </div>
+
+  <!-- 右侧：预设 + 历史 + API -->
+  <div class="sidebar-right">
+    <div class="sidebar-title">色彩预设管理</div>
+    <div class="preset-form">
+      <input type="text" id="presetName" class="field-input" placeholder="预设名称，如：日系清新">
+      <input type="text" id="presetTag" class="field-input" placeholder="标签，逗号分隔：日系, 小清新">
+      <button class="btn primary" onclick="savePreset()">保存预设</button>
+    </div>
+
+    <div class="sidebar-title">标签筛选</div>
+    <div class="tag-list" id="tagList">
+      <span class="tag active" data-tag="" onclick="setTag('')">全部</span>
+    </div>
+
+    <div class="sidebar-title">我的预设 <small id="presetCount"></small></div>
+    <input type="text" class="field-input" id="searchPreset" placeholder="搜索预设..." oninput="renderPresets()">
+    <ul class="preset-list" id="presetList"></ul>
+    <div id="presetEmpty" style="color:var(--text-tertiary);text-align:center;padding:14px;font-size:13px;">暂无预设，保存一个吧！</div>
+
+    <div class="sidebar-title">操作历史（步骤）</div>
+    <div class="hist-bar">
+      <button class="btn" onclick="undoAction()" id="histUndo">撤销</button>
+      <button class="btn" onclick="redoAction()" id="histRedo">重做</button>
+      <button class="btn" onclick="applyHistory(-1)" id="histNew">新建</button>
+    </div>
+    <ul class="history-list" id="historyList"></ul>
+    <div id="historyEmpty" style="color:var(--text-tertiary);text-align:center;padding:10px;font-size:12px;">尚无历史步骤</div>
+
+    <div class="sidebar-title">API 接入区</div>
+    <div class="api-box">
+      <textarea id="apiBody" class="field-input" placeholder="粘贴 JSON 参数，如：{\n  &quot;exposure&quot;: 0.5,\n  &quot;contrast&quot;: 20\n}  （键名对应滑块 id）"></textarea>
+      <div style="display:flex; gap:6px; margin-top:8px;">
+        <button class="btn primary" onclick="applyApiJson()">应用参数</button>
+        <button class="btn" onclick="fetchApiEndpoints()">调用远端配置</button>
+      </div>
+      <input type="text" id="apiUrl" class="field-input" style="margin-top:8px;" placeholder="可选：远端 API 地址（返回 JSON 参数对象）">
+    </div>
+    <div class="sidebar-title">已注册 API 接口</div>
+    <div class="api-list" id="apiList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ================== 状态 ==================
+const STORAGE_KEY = 'lr_glass_presets_v1';
+const API_KEY = 'lr_glass_apis_v1';
+
+let sourceData = null;
+let imageWidth = 0, imageHeight = 0;
+let viewMode = 'original';
+let splitRatio = 0.5;
+let lastToast = null;
+
+let params = {
+  exposure: 0, contrast: 0, highlights: 0, shadows: 0, whites: 0, blacks: 0,
+  temp: 0, tint: 0,
+  saturation: 0, vibrance: 0,
+  clarity: 0, grain: 0, vignette: 0,
+  'red-h': 0, 'red-s': 0, 'red-l': 0,
+  'green-h': 0, 'green-s': 0, 'green-l': 0,
+  'blue-h': 0, 'blue-s': 0, 'blue-l': 0,
+};
+
+// 参数中文名
+const PARAM_LABELS = {
+  exposure: '曝光', contrast: '对比度', highlights: '高光', shadows: '阴影',
+  whites: '白色', blacks: '黑色', temp: '色温', tint: '色调',
+  saturation: '饱和度', vibrance: '自然饱和度',
+  clarity: '清晰度', grain: '颗粒', vignette: '暗角',
+  'red-h': '红色色相', 'red-s': '红色饱和度', 'red-l': '红色明度',
+  'green-h': '绿色色相', 'green-s': '绿色饱和度', 'green-l': '绿色明度',
+  'blue-h': '蓝色色相', 'blue-s': '蓝色饱和度', 'blue-l': '蓝色明度',
+};
+
+// ================== 历史 / 步骤系统 ==================
+// history 每项: { snap, desc }
+let history = [];
+let histIndex = -1;      // 当前所处历史步骤索引
+let isRestoring = false; // 防止恢复时重复记录
+
+function pushHistory(desc) {
+  // 丢弃当前索引之后的重做分支
+  if (histIndex < history.length - 1) {
+    history = history.slice(0, histIndex + 1);
+  }
+  if (history.length > 200) history.shift(); // 上限
+  history.push({
+    snap: JSON.parse(JSON.stringify(params)),
+    layers: JSON.parse(JSON.stringify(layers)),
+    active: activeLayerIndex,
+    desc: desc
+  });
+  histIndex = history.length - 1;
+  updateHistoryUI();
+}
+
+function restoreHistory(idx) {
+  if (idx < 0 || idx >= history.length) return;
+  isRestoring = true;
+  histIndex = idx;
+  const h = history[idx];
+  if (h.layers && h.layers.length) {
+    layers = h.layers;
+    activeLayerIndex = Math.min(h.active || 0, layers.length - 1);
+    params = layers[activeLayerIndex].params;
+    renderLayerPanel();
+  } else {
+    Object.keys(params).forEach(function(k){ params[k] = 0; });
+    Object.assign(params, h.snap || {});
+  }
+  syncSlidersFromParams();
+  render();
+  isRestoring = false;
+  updateHistoryUI();
+}
+
+function undoAction() {
+  if (histIndex <= 0) { showToast('没有可撤销的步骤'); return; }
+  restoreHistory(histIndex - 1);
+}
+
+function redoAction() {
+  if (histIndex >= history.length - 1) { showToast('没有可重做的步骤'); return; }
+  restoreHistory(histIndex + 1);
+}
+
+// 跳转到历史中的第 n 步（从底部新建）
+function applyHistory(dir) {
+  if (!sourceData) return;
+  if (dir === -1) {
+    // 把当前状态作为新步骤提交
+    if (paramsAreDefault()) { showToast('当前已无调整'); return; }
+    pushHistory('新建步骤');
+    updateHistoryUI();
+    return;
+  }
+  // dir 是历史步骤索引（倒数第 n 条），从列表点击
+}
+
+function jumpToHistory(index) {
+  if (index < 0 || index > history.length - 1) return;
+  restoreHistory(index);
+}
+
+function updateHistoryUI() {
+  const list = document.getElementById('historyList');
+  const empty = document.getElementById('historyEmpty');
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+  if (undoBtn) undoBtn.disabled = histIndex <= 0;
+  if (redoBtn) redoBtn.disabled = histIndex >= history.length - 1;
+
+  if (history.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = history.map((h, i) => {
+    const cur = i === histIndex;
+    return '<li class="history-step' + (cur ? ' current' : '') + '" onclick="jumpToHistory(' + i + ')" title="跳到该步骤">' +
+      '<span class="h-index">' + (i + 1) + '</span>' +
+      '<span class="h-desc">' + escapeHtml(h.desc) + '</span>' +
+      '<span class="h-val">' + (cur ? '当前' : '') + '</span>' +
+      '</li>';
+  }).join('');
+  const el = list.querySelector('.current');
+  if (el) el.scrollIntoView({ block: 'nearest' });
+}
+
+function historySnapshotDesc() {
+  // 生成当前状态的一句话描述
+  const active = Object.keys(params).filter(k => params[k] !== 0 || (k === 'grain' && params[k] !== 0));
+  if (active.length === 0) return '初始状态';
+  return active.map(k => PARAM_LABELS[k] + ' ' + fmtVal(k, params[k])).join('，');
+}
+
+function fmtVal(k, v) {
+  if (k === 'exposure') return (v > 0 ? '+' : '') + v;
+  return (v > 0 ? '+' : '') + v;
+}
+
+function paramsAreDefault() {
+  return Object.keys(params).every(k => params[k] === 0);
+}
+
+// ================== 滑块处理 ==================
+// 拖动时实时更新（不记录历史），松开(change)时记录一步
+function bindSliders() {
+  document.querySelectorAll('.sidebar-left input[type=range]').forEach(el => {
+    const key = el.id;
+    params[key] = parseFloat(el.value);
+    updateValueLabel(key);
+
+    el.addEventListener('input', () => {
+      params[key] = parseFloat(el.value);
+      updateValueLabel(key);
+      render();
+    });
+    el.addEventListener('change', () => {
+      if (isRestoring) return;
+      const delta = params[key];
+      pushHistory(PARAM_LABELS[key] + ' = ' + fmtVal(key, delta));
+    });
+  });
+}
+
+function updateValueLabel(key) {
+  const el = document.getElementById('v-' + key);
+  if (el) el.textContent = (params[key] > 0 ? '+' : '') + params[key];
+}
+
+function syncSlidersFromParams() {
+  Object.keys(params).forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.value = params[k];
+    updateValueLabel(k);
+  });
+}
+
+function resetGroup(keys) {
+  if (!sourceData) { showToast('请先打开图片'); return; }
+  keys.forEach(k => { params[k] = 0; });
+  syncSlidersFromParams();
+  pushHistory('重置整组');
+  render();
+}
+// ================== 图片加载 ==================
+function handleFile(event) {
+  const file = event.target.files[0];
+  if (file) loadImageFromFile(file);
+  event.target.value = '';
+}
+
+function handleDrop(event) {
+  event.preventDefault();
+  document.getElementById('dropOverlay').classList.add('hidden');
+  const file = event.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImageFromFile(file);
+  else showToast('仅支持图片文件');
+}
+
+function loadImageFromFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 2048;
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (w > MAX || h > MAX) {
+        const ratio = Math.min(MAX / w, MAX / h);
+        w = Math.floor(w * ratio);
+        h = Math.floor(h * ratio);
+      }
+      imageWidth = w; imageHeight = h;
+      sourceData = getImageData(img, w, h);
+      // 修复：先初始化画布尺寸，再触发渲染，避免 putImageData 尺寸不匹配抛 IndexSizeError
+      setupCanvas();
+      resetAll(false);
+      pushHistory('导入图片');
+      render();
+      renderPresets();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function getImageData(img, w, h) {
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const ctx = off.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  return ctx.getImageData(0, 0, w, h);
+}
+
+function onDividerMouseDown(e) {
+  e.preventDefault();
+  const divider = document.getElementById('compareDivider');
+  const cl = document.getElementById('compareLeft');
+  const mainEl = document.getElementById('mainCanvas');
+  const onMove = (ev) => {
+    const rect = mainEl.getBoundingClientRect();
+    let ratio = (ev.clientX - rect.left) / rect.width;
+    ratio = Math.max(0.05, Math.min(0.95, ratio));
+    splitRatio = ratio;
+    cl.style.width = (ratio * 100) + '%';
+    divider.style.left = (ratio * 100) + '%';
+  };
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function setupCanvas() {
+  document.getElementById('emptyState').classList.add('hidden');
+  const wrap = document.getElementById('canvasWrap');
+  const viewport = document.getElementById('viewport');
+  wrap.classList.remove('hidden');
+
+  const vw = viewport.clientWidth, vh = viewport.clientHeight;
+  const scale = Math.min((vw - 40) / imageWidth, (vh - 40) / imageHeight, 2);
+  const dispW = Math.floor(imageWidth * scale);
+  const dispH = Math.floor(imageHeight * scale);
+
+  const main = document.getElementById('mainCanvas');
+  main.width = imageWidth; main.height = imageHeight;
+  main.style.width = dispW + 'px';
+  main.style.height = dispH + 'px';
+
+  const orig = document.getElementById('origCanvas');
+  orig.width = imageWidth; orig.height = imageHeight;
+  orig.style.width = dispW + 'px';
+  orig.style.height = dispH + 'px';
+  const octx = orig.getContext('2d');
+  octx.putImageData(new ImageData(new Uint8ClampedArray(sourceData.data), imageWidth, imageHeight), 0, 0);
+
+  document.getElementById('imgInfo').textContent = imageWidth + ' x ' + imageHeight + 'px';
+
+  const divider = document.getElementById('compareDivider');
+  const cl = document.getElementById('compareLeft');
+
+  divider.removeEventListener('mousedown', onDividerMouseDown);
+  divider.addEventListener('mousedown', onDividerMouseDown);
+
+  divider.style.left = '50%';
+  cl.style.width = '50%';
+  setViewMode('original', document.getElementById('viewOriginal'));
+}
+
+// ================== 视图模式 ==================
+function setViewMode(mode, btn) {
+  viewMode = mode;
+  document.querySelectorAll('.view-controls .btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('splitHint').style.display = mode === 'split' ? 'block' : 'none';
+  const cl = document.getElementById('compareLeft');
+  const divider = document.getElementById('compareDivider');
+  if (mode === 'split') {
+    cl.style.display = 'block';
+    divider.style.display = 'block';
+    cl.style.width = (splitRatio * 100) + '%';
+    divider.style.left = (splitRatio * 100) + '%';
+  } else {
+    cl.style.display = 'none';
+    divider.style.display = 'none';
+  }
+  render();
+}
+
+function resetSplit() {
+  splitRatio = 0.5;
+  document.getElementById('compareLeft').style.width = '50%';
+  document.getElementById('compareDivider').style.left = '50%';
+  render();
+}
+
+// ================== 渲染 ==================
+function render() {
+  if (!sourceData) return;
+  const main = document.getElementById('mainCanvas');
+  const ctx = main.getContext('2d');
+  if (viewMode === 'original') {
+    ctx.putImageData(new ImageData(new Uint8ClampedArray(sourceData.data), imageWidth, imageHeight), 0, 0);
+    updateHistogram(sourceData.data);
+  } else {
+    const clamped = new Uint8ClampedArray(sourceData.data);
+    applyAdjustments(clamped);
+    ctx.putImageData(new ImageData(clamped, imageWidth, imageHeight), 0, 0);
+    updateHistogram(clamped);
+  }
+}
+
+function updateHistogram(data) {
+  const canvas = document.getElementById('histogramCanvas');
+  canvas.width = 200; canvas.height = 68;
+  const ctx = canvas.getContext('2d');
+  const bins = 50;
+  const lum = new Array(bins).fill(0);
+  const n = data.length;
+  let max = 0;
+  for (let i = 0; i < n; i += 4) {
+    const L = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+    const idx = Math.min(bins - 1, Math.floor(L / 256 * bins));
+    lum[idx]++;
+    if (lum[idx] > max) max = lum[idx];
+  }
+  ctx.clearRect(0, 0, 200, 68);
+  ctx.fillStyle = 'rgba(255,255,255,.8)';
+  const bw = 200 / bins;
+  for (let j = 0; j < bins; j++) {
+    const h = max > 0 ? (lum[j] / max) * 60 : 0;
+    ctx.fillRect(j * bw, 68 - h, bw - 1, h);
+  }
+}
+// ================== 色彩空间工具 ==================
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return { h: h * 360, s: s * 100, l: l * 100 };
+}
+
+function hslToRgb(h, s, l) {
+  h = ((h % 360) + 360) % 360 / 360;
+  s /= 100; l /= 100;
+  let r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  return { r: r * 255, g: g * 255, b: b * 255 };
+}
+
+// 通道混合权重 —— 模拟 Lightroom HSL：根据主色相区间加权
+function channelWeights(r, g, b) {
+  const hsl = rgbToHsl(r, g, b);
+  const H = hsl.h;
+  // 六个色相区间中心
+  const centers = { red: 0, green: 120, blue: 240, yellow: 60, aqua: 180, magenta: 300 };
+  const result = {};
+  const span = 50; // 影响范围
+  for (const ch in centers) {
+    let diff = Math.abs(H - centers[ch]);
+    if (diff > 180) diff = 360 - diff;
+    const w = diff <= span ? 1 - (diff / span) : 0;
+    result[ch] = w;
+  }
+  return result;
+}
+
+// ================== 核心调整 ==================
+function applyAdjustments(data) {
+  const n = data.length;
+  const gain = Math.pow(2, params.exposure);
+  const tempShift = params.temp * 0.55;
+  const tintShift = params.tint * 0.45;
+  const contrastF = 1 + params.contrast / 100;
+  const satF = 1 + params.saturation / 100;
+  const vibF = 1 + params.vibrance / 100;
+
+  const grainParams = params.grain;
+  const vignette = params.vignette;
+
+  for (let i = 0; i < n; i += 4) {
+    let r = data[i], g = data[i+1], b = data[i+2];
+
+    // 曝光
+    r *= gain; g *= gain; b *= gain;
+
+    // 白平衡
+    r += tempShift + tintShift;
+    b -= tempShift;
+    g -= tintShift * 0.85;
+
+    // 对比度
+    r = (r - 128) * contrastF + 128;
+    g = (g - 128) * contrastF + 128;
+    b = (b - 128) * contrastF + 128;
+
+    // 明度分量用于高光/阴影
+    let lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+    // 高光 （只作用高亮区）
+    if (params.highlights !== 0) {
+      const w = smoothstep(0.55, 1.0, lum / 255) * (params.highlights / 100) * 70;
+      r += w; g += w; b += w;
+    }
+    // 阴影 （只作用暗部）
+    if (params.shadows !== 0) {
+      const w = smoothstep(0.0, 0.45, lum / 255) * (params.shadows / 100) * 70;
+      r += w; g += w; b += w;
+    }
+    // 白色色阶（压缩高光截止）
+    if (params.whites !== 0) {
+      r += params.whites * 0.3; g += params.whites * 0.3; b += params.whites * 0.3;
+    }
+    // 黑色色阶（压缩暗部截止）
+    if (params.blacks !== 0) {
+      r += params.blacks * 0.3; g += params.blacks * 0.3; b += params.blacks * 0.3;
+    }
+
+    // 到位 RGB 转到 HSL
+    let hsl = rgbToHsl(clamp255(r), clamp255(g), clamp255(b));
+
+    // 整体饱和度
+    hsl.s = Math.max(0, Math.min(100, hsl.s * satF));
+    // 自然饱和度：低饱和色增益大，已饱和色增益小
+    if (vibF !== 1) {
+      const satFactor = 1 - hsl.s / 100;
+      hsl.s = Math.max(0, Math.min(100, hsl.s + params.vibrance * satFactor));
+    }
+
+    // 通道 HSL（红色/绿色/蓝色 色相、饱和度、明度）
+    const wts = channelWeightsFromHue(hsl.h);
+    hsl.h += wts.red * params['red-h'] * 1.2 + wts.green * params['green-h'] * 1.2 + wts.blue * params['blue-h'] * 1.2;
+    let chSat = wts.red * params['red-s'] * 0.6 + wts.green * params['green-s'] * 0.6 + wts.blue * params['blue-s'] * 0.6;
+    let chLum = wts.red * params['red-l'] * 0.5 + wts.green * params['green-l'] * 0.5 + wts.blue * params['blue-l'] * 0.5;
+    hsl.s = Math.max(0, Math.min(100, hsl.s + chSat));
+    hsl.l = Math.max(0, Math.min(100, hsl.l + chLum * 1.2));
+
+    const rgb2 = hslToRgb(hsl.h, hsl.s, hsl.l);
+    r = rgb2.r; g = rgb2.g; b = rgb2.b;
+
+    // 清晰度：用邻近对比的近似——通过局部反差增益（简化为提高中频）使用 unsharp 近似
+    // 这里做简化：清晰度 = 让亮度远离中间调
+    if (params.clarity !== 0) {
+      let ll = 0.299 * r + 0.587 * g + 0.114 * b;
+      const delta = ((ll - 128) / 128) * params.clarity * 0.25;
+      r += delta; g += delta; b += delta;
+    }
+
+    // 颗粒（确定性伪随机）
+    if (grainParams > 0) {
+      const idx = i / 4;
+      const seed = Math.sin(idx * 12.9898) * 43758.5453;
+      const noise = (seed - Math.floor(seed)) - 0.5;
+      r += noise * grainParams * 0.6;
+      g += noise * grainParams * 0.6;
+      b += noise * grainParams * 0.6;
+    }
+
+    data[i] = clamp255(r);
+    data[i+1] = clamp255(g);
+    data[i+2] = clamp255(b);
+  }
+
+  // 暗角（单独处理，基于像素位置）
+  if (vignette !== 0) applyVignette(data);
+}
+
+function applyVignette(data) {
+  const cx = (imageWidth - 1) / 2, cy = (imageHeight - 1) / 2;
+  const maxDist = Math.sqrt(cx * cx + cy * cy);
+  const amount = -params.vignette; // 正=暗角，负=提亮四角
+  for (let y = 0; y < imageHeight; y++) {
+    for (let x = 0; x < imageWidth; x++) {
+      const dist = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / maxDist;
+      const factor = 1 - amount * Math.pow(dist, 3);
+      const idx = (y * imageWidth + x) * 4;
+      data[idx] = clamp255(data[idx] * factor);
+      data[idx+1] = clamp255(data[idx+1] * factor);
+      data[idx+2] = clamp255(data[idx+2] * factor);
+    }
+  }
+}
+
+function smoothstep(edge0, edge1, x) {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+function clamp255(v) {
+  return v < 0 ? 0 : v > 255 ? 255 : v;
+}
+
+</script>
+
+<!-- ===================== 引擎脚本 ===================== -->
+<script>
+/* ============ 图层 / 混合模式 / 滤镜 引擎（模块化可扩展） ============ */
+function channelWeightsFromHue(H) {
+  const centers = { red:0, green:120, blue:240, yellow:60, aqua:180, magenta:300 };
+  const result = {};
+  const span = 50;
+  for (const ch in centers) {
+    let diff = Math.abs(H - centers[ch]);
+    if (diff > 180) diff = 360 - diff;
+    result[ch] = diff <= span ? 1 - diff / span : 0;
+  }
+  return result;
+}
+const BLEND_MODES = {
+  normal:     { label: '正常',     fn: (r,g,b,a,bR,bG,bB)=>({r:a*r+(1-a)*bR,g:a*g+(1-a)*bG,b:a*b+(1-a)*bB}) },
+  multiply:   { label: '正片叠底', fn: (r,g,b,a,bR,bG,bB)=>({r:bm(r,bR,a),g:bm(g,bG,a),b:bm(b,bB,a)}) },
+  screen:     { label: '滤色',     fn: (r,g,b,a,bR,bG,bB)=>({r:bs(r,bR,a),g:bs(g,bG,a),b:bs(b,bB,a)}) },
+  overlay:    { label: '叠加',     fn: (r,g,b,a,bR,bG,bB)=>({r:bo(r,bR,a),g:bo(g,bG,a),b:bo(b,bB,a)}) },
+  softlight:  { label: '柔光',     fn: (r,g,b,a,bR,bG,bB)=>({r:bq(r,bR,a),g:bq(g,bG,a),b:bq(b,bB,a)}) },
+  hardlight:  { label: '强光',     fn: (r,g,b,a,bR,bG,bB)=>({r:bq(bR,r,a),g:bq(bG,g,a),b:bq(bB,b,a)}) },
+  darken:     { label: '变暗',     fn: (r,g,b,a,bR,bG,bB)=>({r:a*Math.min(r,bR)+(1-a)*bR,g:a*Math.min(g,bG)+(1-a)*bG,b:a*Math.min(b,bB)+(1-a)*bB}) },
+  lighten:    { label: '变亮',     fn: (r,g,b,a,bR,bG,bB)=>({r:a*Math.max(r,bR)+(1-a)*bR,g:a*Math.max(g,bG)+(1-a)*bG,b:a*Math.max(b,bB)+(1-a)*bB}) },
+  difference: { label: '差值',     fn: (r,g,b,a,bR,bG,bB)=>({r:Math.abs(r-a*bR-128*(1-a)),g:Math.abs(g-a*bG-128*(1-a)),b:Math.abs(b-a*bB-128*(1-a))}) },
+  exclusion:  { label: '排除',     fn: (r,g,b,a,bR,bG,bB)=>({r:bw(r,bR,a),g:bw(g,bG,a),b:bw(b,bB,a)}) },
+  luminosity: { label: '叠加处理', fn: (r,g,b,a,bR,bG,bB)=>({r:a*r+(1-a)*bR,g:a*g+(1-a)*bG,b:a*b+(1-a)*bB}) },
+};
+function bm(r,bR,a){ return a*((r/255)*(bR/255))*255 + (1-a)*bR; }
+function bs(r,bR,a){ return a*(255 - (1-r/255)*(1-bR/255)*255) + (1-a)*bR; }
+function bo(r,bR,a){ const t = r<128 ? (2*r*bR)/255 : 255 - 2*(255-r)*(255-bR)/255; return a*t + (1-a)*bR; }
+function bq(r,bR,a){ const t = r<128 ? (2*r/255)*(bR/255)*255 : 255 - 2*(1-r/255)*(1-bR/255)*255; return a*t + (1-a)*bR; }
+function bw(r,bR,a){ return a*(r+bR-2*r*bR/255) + (1-a)*bR; }
+
+/* 图层对象 */
+let layerSeq = 0;
+function newLayerParams() {
+  return {
+    exposure:0, contrast:0, highlights:0, shadows:0, whites:0, blacks:0,
+    temp:0, tint:0, saturation:0, vibrance:0, clarity:0, grain:0, vignette:0,
+    'red-h':0,'red-s':0,'red-l':0,'green-h':0,'green-s':0,'green-l':0,'blue-h':0,'blue-s':0,'blue-l':0,
+    blur:0
+  };
+}
+let layers = [];
+let activeLayerIndex = 0;
+
+function initLayers() {
+  layers = [{
+    id: 'lay-1', name: '基础图层', type: 'base', enabled: true,
+    opacity: 1, blendMode: 'normal', params: newLayerParams()
+  }];
+  activeLayerIndex = 0;
+  params = layers[0].params;
+  syncSlidersFromParams();
+  renderLayerPanel();
+}
+function curLayer() { return layers[activeLayerIndex]; }
+/* 图层操作 */
+function addLayer(kind) {
+  const l = {
+    id: 'lay-' + (++layerSeq),
+    name: '图层 ' + layers.length,
+    type: 'adjust', enabled: true, opacity: 1, blendMode: 'normal',
+    params: newLayerParams()
+  };
+  layers.push(l);
+  activeLayerIndex = layers.length - 1;
+  params = l.params;
+  syncSlidersFromParams();
+  renderLayerPanel();
+  pushHistory('新建图层：' + l.name);
+  render();
+}
+function selectLayer(index) {
+  if (index < 0 || index >= layers.length) return;
+  activeLayerIndex = index;
+  params = layers[index].params;
+  syncSlidersFromParams();
+  renderLayerPanel();
+  render();
+}
+function toggleLayer(index, cb) { cb && cb(); layers[index].enabled = !layers[index].enabled; renderLayerPanel(); render(); }
+function setLayerOpacity(index, val) {
+  layers[index].opacity = parseFloat(val);
+  renderLayerPanel(); render();
+}
+function setLayerBlend(index, mode) {
+  layers[index].blendMode = mode;
+  renderLayerPanel(); render();
+}
+function removeLayer(index) {
+  if (layers.length <= 1) { showToast('至少保留一个图层'); return; }
+  const nm = layers[index].name;
+  layers.splice(index, 1);
+  if (activeLayerIndex >= layers.length) activeLayerIndex = layers.length - 1;
+  params = layers[activeLayerIndex].params;
+  syncSlidersFromParams();
+  renderLayerPanel();
+  pushHistory('删除图层：' + nm);
+  render();
+}
+
+/* 图层面板 UI 渲染 */
+function renderLayerPanel() {
+  let box = document.getElementById('layerPanel');
+  if (!box) {
+    // 注入到右侧侧栏顶部
+    const right = document.querySelector('.sidebar-right');
+    const holder = document.createElement('div');
+    holder.id = 'layerPanel';
+    right.insertBefore(holder, right.firstChild);
+    box = holder;
+  }
+  const opts = Object.keys(BLEND_MODES).map(k => k).join(',');
+  box.innerHTML =
+    '<div class="sidebar-title">图层</div>' +
+    '<div class="hist-bar">' +
+      '<button class="btn primary" onclick="addLayer()">新增图层</button>' +
+      '<button class="btn" onclick="curLayer()&&renameLayer(activeLayerIndex)">重命名</button>' +
+    '</div>' +
+    '<div id="layerList">' + layers.map((l, i) => layerItemHTML(l, i)).join('') + '</div>';
+}
+
+function layerItemHTML(l, i) {
+  const active = i === activeLayerIndex;
+  const optStr = Object.keys(BLEND_MODES).map(k => '<option value="' + k + '"' + (l.blendMode===k?' selected':'') + '>' + BLEND_MODES[k].label + '</option>').join('');
+  return '<div class="layer-item' + (active?' active':'') + '" onclick="selectLayer(' + i + ')">' +
+    '<div class="layer-head">' +
+      '<button class="icon-btn ew" onclick="event.stopPropagation(); toggleLayer(' + i + ')">' + (l.enabled?'[开]':'[关]') + '</button>' +
+      '<span class="layer-name">' + escapeHtml(l.name) + '</span>' +
+      '<button class="icon-btn" onclick="event.stopPropagation(); removeLayer(' + i + ')">删除</button>' +
+    '</div>' +
+    '<div class="layer-sub">' +
+      '<label>不透明度 <input type="range" min="0" max="100" value="' + Math.round(l.opacity*100) + '" oninput="setLayerOpacity(' + i + ', this.value/100)" onclick="event.stopPropagation()"></label>' +
+      '<label>混合模式 <select onchange="setLayerBlend(' + i + ', this.value)" onclick="event.stopPropagation()">' + optStr + '</select></label>' +
+    '</div>' +
+  '</div>';
+}
+
+function renameLayer(index) {
+  const cur = layers[index].name;
+  const next = prompt('重命名图层', cur);
+  if (next && next.trim()) { layers[index].name = next.trim(); renderLayerPanel(); }
+}
+/* ============ 高斯模糊（可分 1D，O(n) per pass） ============ */
+function gaussianKernel(sigma) {
+  const rad = Math.max(1, Math.round(sigma * 3));
+  const size = rad * 2 + 1;
+  const k = new Array(size);
+  let sum = 0;
+  for (let i = 0; i < size; i++) {
+    const x = i - rad;
+    k[i] = Math.exp(-(x * x) / (2 * sigma * sigma));
+    sum += k[i];
+  }
+  for (let i = 0; i < size; i++) k[i] /= sum;
+  return { k, rad };
+}
+function blurPass(src, dst, w, h, k, rad) {
+  // 水平
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      let r = 0, g = 0, b = 0;
+      for (let i = -rad; i <= rad; i++) {
+        let xx = x + i;
+        if (xx < 0) xx = 0; else if (xx >= w) xx = w - 1;
+        const s = (row + xx) * 4;
+        const wt = k[i + rad];
+        r += src[s] * wt; g += src[s+1] * wt; b += src[s+2] * wt;
+      }
+      const d = (row + x) * 4;
+      dst[d] = r; dst[d+1] = g; dst[d+2] = b; dst[d+3] = src[(row + x) * 4 + 3];
+    }
+  }
+}
+function verticalPass(src, dst, w, h, k, rad) {
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let r = 0, g = 0, b = 0, a = 0;
+      for (let i = -rad; i <= rad; i++) {
+        let yy = y + i;
+        if (yy < 0) yy = 0; else if (yy >= h) yy = h - 1;
+        const s = (yy * w + x) * 4;
+        const wt = k[i + rad];
+        r += src[s] * wt; g += src[s+1] * wt; b += src[s+2] * wt; a += src[s+3] * wt;
+      }
+      const d = (y * w + x) * 4;
+      dst[d] = r; dst[d+1] = g; dst[d+2] = b; dst[d+3] = a;
+    }
+  }
+}
+function gaussianBlur(data, sigma) {
+  if (sigma <= 0.5) return;
+  const { k, rad } = gaussianKernel(sigma);
+  const w = imageWidth, h = imageHeight, n = w * h;
+  const tmp = new Uint8ClampedArray(n * 4);
+  const out = new Uint8ClampedArray(n * 4);
+  blurPass(data, tmp, w, h, k, rad);
+  verticalPass(tmp, out, w, h, k, rad);
+  data.set(out);
+}
+
+/* ============ 单图层调整（含模糊），参数对象 p ============ */
+function applyLayer(data, p) {
+  let allZero = true;
+  for (const k in p) { if (p[k]) { allZero = false; break; } }
+  if (allZero) return;
+  const n = data.length;
+  const gain = Math.pow(2, p.exposure || 0);
+  const tempShift = (p.temp || 0) * 0.55;
+  const tintShift = (p.tint || 0) * 0.45;
+  const cf = 1 + (p.contrast || 0) / 100;
+  const satF = 1 + (p.saturation || 0) / 100;
+  const gra = p.grain || 0;
+
+  for (let i = 0; i < n; i += 4) {
+    let r = data[i], g = data[i+1], b = data[i+2];
+    r *= gain; g *= gain; b *= gain;
+    r += tempShift + tintShift; b -= tempShift; g -= tintShift * 0.85;
+    r = (r - 128) * cf + 128; g = (g - 128) * cf + 128; b = (b - 128) * cf + 128;
+    let lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    if (p.highlights) { const w = sstep(0.55, 1.0, lum/255) * (p.highlights/100) * 70; r+=w; g+=w; b+=w; }
+    if (p.shadows)     { const w = sstep(0.0, 0.45, lum/255) * (p.shadows/100) * 70; r+=w; g+=w; b+=w; }
+    if (p.whites)      { r += (p.whites||0)*0.3; g += (p.whites||0)*0.3; b += (p.whites||0)*0.3; }
+    if (p.blacks)      { r += (p.blacks||0)*0.3; g += (p.blacks||0)*0.3; b += (p.blacks||0)*0.3; }
+    let hsl = rgbToHsl(c255(r), c255(g), c255(b));
+    hsl.s = Math.max(0, Math.min(100, hsl.s * satF));
+    if (p.vibrance) { const sf = 1 - hsl.s/100; hsl.s = Math.max(0, Math.min(100, hsl.s + (p.vibrance||0) * sf)); }
+    const wt = channelWeightsFromHue(hsl.h);
+    hsl.h += wt.red*(p['red-h']||0)*1.2 + wt.green*(p['green-h']||0)*1.2 + wt.blue*(p['blue-h']||0)*1.2;
+    let chS = wt.red*(p['red-s']||0)*0.6 + wt.green*(p['green-s']||0)*0.6 + wt.blue*(p['blue-s']||0)*0.6;
+    let chL = wt.red*(p['red-l']||0)*0.5 + wt.green*(p['green-l']||0)*0.5 + wt.blue*(p['blue-l']||0)*0.5;
+    hsl.s = Math.max(0, Math.min(100, hsl.s + chS));
+    hsl.l = Math.max(0, Math.min(100, hsl.l + chL*1.2));
+    const rgb = hslToRgb(hsl.h, hsl.s, hsl.l);
+    r = rgb.r; g = rgb.g; b = rgb.b;
+    if (p.clarity) { let ll = 0.299*r + 0.587*g + 0.114*b; const d = ((ll-128)/128) * (p.clarity||0) * 0.25; r+=d; g+=d; b+=d; }
+    if (gra > 0) { const seed = Math.sin((i/4)*12.9898)*43758.5453; const no = (seed - Math.floor(seed)) - 0.5; r += no*gra*0.6; g += no*gra*0.6; b += no*gra*0.6; }
+    data[i] = c255(r); data[i+1] = c255(g); data[i+2] = c255(b);
+  }
+  // 暗角
+  if (p.vignette) applyVignetteLayer(data, p.vignette);
+  // 高斯模糊滤镜
+  if (p.blur > 0) gaussianBlur(data, (p.blur / 100) * 20 + 0.6);
+}
+function sstep(e0, e1, x) { const t = Math.max(0, Math.min(1, (x-e0)/(e1-e0))); return t*t*(3-2*t); }
+function c255(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
+function applyVignetteLayer(data, amount) {
+  const cx = (imageWidth-1)/2, cy = (imageHeight-1)/2;
+  const maxD = Math.sqrt(cx*cx + cy*cy);
+  const amt = -amount;
+  let idx = 0;
+  for (let y = 0; y < imageHeight; y++) {
+    for (let x = 0; x < imageWidth; x++) {
+      const d = Math.sqrt((x-cx)*(x-cx) + (y-cy)*(y-cy)) / maxD;
+      const f = 1 - amt * Math.pow(d, 3);
+      data[idx] = c255(data[idx]*f); data[idx+1] = c255(data[idx+1]*f); data[idx+2] = c255(data[idx+2]*f);
+      idx += 4;
+    }
+  }
+}
+/* ============ 合成渲染管线（覆盖 render） ============ */
+function blendImages(base, layer, modeKey, opacity) {
+  const mode = BLEND_MODES[modeKey] || BLEND_MODES.normal;
+  const a = opacity;
+  const w = imageWidth, h = imageHeight;
+  for (let i = 0; i < base.length; i += 4) {
+    const LR = layer[i], LG = layer[i+1], LB = layer[i+2];
+    const RR = base[i],  RG = base[i+1], RB = base[i+2];
+    let o;
+    // 亮度混合模式特殊处理
+    if (modeKey === 'luminosity') {
+      const res = mode.fn.apply(null, [LR, LG, LB, a, RR, RG, RB]);
+      o = { r: res.r, g: res.g, b: res.b };
+    } else {
+      o = mode.fn(LR, LG, LB, a, RR, RG, RB);
+    }
+    base[i] = c255(o.r); base[i+1] = c255(o.g); base[i+2] = c255(o.b);
+  }
+}
+
+function renderComposite() {
+  const result = new Uint8ClampedArray(sourceData.data);
+  for (let i = 0; i < layers.length; i++) {
+    const l = layers[i];
+    if (!l.enabled) continue;
+    const copy = new Uint8ClampedArray(sourceData.data);
+    applyLayer(copy, l.params);
+    blendImages(result, copy, l.blendMode, l.opacity);
+  }
+  return result;
+}
+
+function render() {
+  if (!sourceData) return;
+  const main = document.getElementById('mainCanvas');
+  const ctx = main.getContext('2d');
+  if (viewMode === 'original') {
+    ctx.putImageData(new ImageData(new Uint8ClampedArray(sourceData.data), imageWidth, imageHeight), 0, 0);
+    updateHistogram(sourceData.data);
+  } else {
+    let out;
+    // 无图层时回退到旧路径（仅当前全局 params）
+    if (layers.length <= 1) {
+      const clamped = new Uint8ClampedArray(sourceData.data);
+      applyLayer(clamped, params);
+      out = clamped;
+    } else {
+      out = renderComposite();
+    }
+    ctx.putImageData(new ImageData(out, imageWidth, imageHeight), 0, 0);
+    updateHistogram(out);
+  }
+}
+
+// 覆盖导出，使用渲染管线输出实际图层效果
+function downloadImage() {
+  if (!sourceData) { showToast('请先打开图片'); return; }
+  const canvas = document.createElement('canvas');
+  canvas.width = imageWidth; canvas.height = imageHeight;
+  const ctx = canvas.getContext('2d');
+  let out;
+  if (layers.length <= 1) { out = new Uint8ClampedArray(sourceData.data); applyLayer(out, params); }
+  else out = renderComposite();
+  ctx.putImageData(new ImageData(out, imageWidth, imageHeight), 0, 0);
+  const a = document.createElement('a');
+  a.download = 'lr-glass-' + Date.now() + '.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  showToast('已导出 PNG');
+}
+/* ================= 补齐：工具 / 预设 / API / 快捷键 / 初始化 ================= */
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+
+/* 重置全部 */
+function resetAll(record) {
+  if (!sourceData) { showToast('请先打开图片'); return; }
+  Object.keys(params).forEach(function(k){ if (k !== 'blur') params[k] = 0; });
+  syncSlidersFromParams();
+  renderLayerPanel();
+  if (record) pushHistory('重置全部');
+  if (sourceData) render();
+}
+
+/* ================= 预设管理 ================= */
+let presets = [];
+let activeTag = '';
+function loadStoredPresets() {
+  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : []; } catch(e) { return []; }
+}
+function persistPresets() { localStorage.setItem(STORAGE_KEY, JSON.stringify(presets)); updateTagList(); renderPresets(); }
+function savePreset() {
+  const name = document.getElementById('presetName').value.trim();
+  if (!name) { showToast('请填写预设名称'); return; }
+  presets.push({
+    id: Date.now().toString(),
+    name: name,
+    params: JSON.parse(JSON.stringify(params)),
+    tags: splitTags(document.getElementById('presetTag').value),
+    createdAt: new Date().toISOString()
+  });
+  document.getElementById('presetName').value = '';
+  document.getElementById('presetTag').value = '';
+  persistPresets();
+  showToast('已保存预设');
+}
+function splitTags(str) { return String(str).split(/[,，;;\s]+/).map(function(t){ return t.trim(); }).filter(Boolean); }
+function getAllTags() { const s = new Set(); presets.forEach(function(p){ (p.tags||[]).forEach(function(t){ s.add(t); }); }); return Array.from(s); }
+function setTag(tag) { activeTag = tag; document.querySelectorAll('#tagList .tag').forEach(function(t){ t.classList.toggle('active', t.dataset.tag === tag); }); renderPresets(); }
+function updateTagList() {
+  const el = document.getElementById('tagList'); if (!el) return;
+  const all = getAllTags();
+  el.innerHTML = '<span class="tag' + (activeTag===''?' active':'') + '" data-tag="" onclick="setTag(\'\')">全部</span>' +
+    all.map(function(t){ return '<span class="tag' + (activeTag===t?' active':'') + '" data-tag="' + escapeHtml(t) + '" onclick="setTag(\'' + escapeHtml(t)+'\')">' + escapeHtml(t) + '</span>'; }).join('');
+}
+function renderPresets() {
+  const listEl = document.getElementById('presetList'); if (!listEl) return;
+  const emptyEl = document.getElementById('presetEmpty');
+  let f = presets;
+  if (activeTag) f = f.filter(function(p){ return (p.tags||[]).indexOf(activeTag) >= 0; });
+  if (f.length === 0) { listEl.innerHTML = ''; emptyEl.style.display = 'block'; return; }
+  emptyEl.style.display = 'none';
+  listEl.innerHTML = f.map(function(p){
+    const n = Object.keys(p.params||{}).filter(function(k){ return p.params[k] !== 0; }).length;
+    return '<li class="preset-item" onclick="applyPreset(\'' + p.id + '\')">' +
+      '<div class="p-info"><div class="p-name">' + escapeHtml(p.name) + '</div>' +
+      '<div class="p-meta">' + n + ' 项调整</div></div>' +
+      '<div class="p-actions"><button class="icon-btn" onclick="event.stopPropagation(); if(confirm(\'删除预设？\')) deletePreset(\'' + p.id + '\')">删除</button></div>' +
+    '</li>';
+  }).join('');
+  const pc = document.getElementById('presetCount'); if (pc) pc.textContent = f.length + ' 个';
+}
+function applyPreset(id) {
+  const p = presets.find(function(x){ return x.id === id; });
+  if (!p) { showToast('预设不存在'); return; }
+  if (!sourceData) { showToast('请先打开图片'); return; }
+  Object.keys(p.params).forEach(function(k){ params[k] = p.params[k]; });
+  syncSlidersFromParams();
+  pushHistory('应用预设：' + p.name);
+  render(); renderLayerPanel();
+  showToast('已应用：' + p.name);
+}
+function deletePreset(id) { presets = presets.filter(function(p){ return p.id !== id; }); persistPresets(); showToast('已删除预设'); }
+/* ================= API 接入区 ================= */
+const BUILTIN_APIS = [ { name: 'applyJson', desc: '将 JSON 参数应用到当前图层' } ];
+function applyApiJson() {
+  const raw = document.getElementById('apiBody').value.trim();
+  if (!raw) { showToast('请粘贴 JSON 参数'); return; }
+  try {
+    const obj = JSON.parse(raw);
+    applyParamObject(obj);
+    showToast('已应用 JSON 参数');
+  } catch(e) { showToast('JSON 解析失败：' + e.message); }
+}
+function applyParamObject(obj) {
+  if (!sourceData) { showToast('请先打开图片'); return; }
+  let applied = 0;
+  Object.keys(obj).forEach(function(k){
+    if (k in params) { params[k] = parseFloat(obj[k]); if (isNaN(params[k])) params[k] = 0; applied++; }
+  });
+  if (applied === 0) { showToast('未匹配到任何参数键'); return; }
+  syncSlidersFromParams();
+  pushHistory('API 应用 ' + applied + ' 项参数');
+  render(); renderLayerPanel();
+}
+function fetchApiEndpoints() {
+  const url = document.getElementById('apiUrl').value.trim();
+  if (!url) { renderApiList(); showToast('未填 URL，仅显示内置'); return; }
+  showToast('请求远端配置…');
+  fetch(url)
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data){
+      if (data && typeof data === 'object' && data.params) { applyParamObject(data.params); showToast('远端配置已应用'); }
+      else showToast('返回未包含 params 字段');
+      renderApiList();
+    })
+    .catch(function(err){ showToast('请求失败：' + err.message); });
+}
+function renderApiList() {
+  const el = document.getElementById('apiList'); if (!el) return;
+  el.innerHTML = BUILTIN_APIS.map(function(a){
+    return '<div class="api-item"><div class="api-top"><span class="api-badge">内建</span><span class="api-name">' + escapeHtml(a.name) + '</span></div><div class="api-desc">' + escapeHtml(a.desc) + '</div></div>';
+  }).join('');
+}
+
+/* ============ 覆盖图层面板：加入高斯模糊滤镜滑块 ============ */
+function setLayerBlur(index, val) { layers[index].params.blur = parseFloat(val); renderLayerPanel(); render(); }
+function layerItemHTML(l, i) {
+  const optStr = Object.keys(BLEND_MODES).map(function(k){ return '<option value="' + k + '"' + (l.blendMode===k?' selected':'') + '>' + BLEND_MODES[k].label + '</option>'; }).join('');
+  const active = i === activeLayerIndex;
+  return '<div class="layer-item' + (active?' active':'') + '" onclick="selectLayer(' + i + ')">' +
+    '<div class="layer-head">' +
+      '<button class="icon-btn ew" onclick="event.stopPropagation(); toggleLayer(' + i + ')">' + (l.enabled?'[开]':'[关]') + '</button>' +
+      '<span class="layer-name">' + escapeHtml(l.name) + '</span>' +
+      '<button class="icon-btn" onclick="event.stopPropagation(); removeLayer(' + i + ')">删除</button>' +
+    '</div>' +
+    '<div class="layer-sub">' +
+      '<label>不透明度 <input type="range" min="0" max="100" value="' + Math.round(l.opacity*100) + '" oninput="setLayerOpacity(' + i + ', this.value/100)" onclick="event.stopPropagation()"></label>' +
+      '<label>混合模式 <select onchange="setLayerBlend(' + i + ', this.value)" onclick="event.stopPropagation()">' + optStr + '</select></label>' +
+      '<label>模糊 <input type="range" min="0" max="100" value="' + (l.params.blur||0) + '" oninput="setLayerBlur(' + i + ', this.value)" onclick="event.stopPropagation()"></label>' +
+    '</div></div>';
+}
+
+/* ================= 快捷键 ================= */
+document.addEventListener('keydown', function(e){
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && !e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undoAction(); }
+  else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redoAction(); }
+  else if (mod && e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); redoAction(); }
+});
+
+/* ================= 初始化 ================= */
+document.addEventListener('DOMContentLoaded', function(){
+  presets = loadStoredPresets();
+  bindSliders();
+  initLayers();
+  renderLayerPanel();
+  updateTagList();
+  renderPresets();
+  renderApiList();
+  updateHistoryUI();
+});
+</script>
+
+<style>
+  /* 图层面板样式 */
+  .layer-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; transition: border-color .15s, background .15s; }
+  .layer-item.active { border-color: var(--accent); background: rgba(10,132,255,0.12); }
+  .layer-item:hover { background: rgba(255,255,255,0.1); }
+  .layer-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .layer-name { flex: 1; font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .layer-sub { display: flex; flex-direction: column; gap: 6px; }
+  .layer-sub label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--text-secondary); }
+  .layer-sub select { background: rgba(255,255,255,0.1); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 6px; padding: 3px 6px; font-size: 11px; max-width: 120px; }
+  .layer-sub input[type=range] { flex: 1; min-width: 60px; height: 4px; -webkit-appearance: none; background: rgba(255,255,255,0.14); border-radius: 2px; }
+  .layer-sub input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); }
+  #layerList { max-height: 30vh; overflow-y: auto; }
+</style>
+</body>
+</html>
