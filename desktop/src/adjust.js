@@ -91,24 +91,51 @@ function renderComposite() {
 
 function render() {
   if (!sourceData) return;
+  // 预览模式下用降采样数据，保证拖动流畅
+  if (isPreviewRender && previewData) return renderPreview();
+  renderFull();
+}
+
+// 拖动滑块时使用：降采样低分辨率渲染 + 放大预览（快速）
+function renderPreview() {
+  const main = document.getElementById('mainCanvas');
+  const ctx = main.getContext('2d');
+  const ow = imageWidth, oh = imageHeight, od = sourceData;
+  // 离线小 canvas
+  const off = document.createElement('canvas');
+  off.width = previewWidth; off.height = previewHeight;
+  const octx = off.getContext('2d');
+  const clamped = new Uint8ClampedArray(previewData.data);
+  if (viewMode === 'original') {
+    octx.putImageData(new ImageData(new Uint8ClampedArray(previewData.data), previewWidth, previewHeight), 0, 0);
+  } else {
+    // 临时切换全局尺寸供 applyLayer 内部 vignette/blur 使用
+    imageWidth = previewWidth; imageHeight = previewHeight;
+    applyLayer(clamped, params);
+    imageWidth = ow; imageHeight = oh;
+    octx.putImageData(new ImageData(clamped, previewWidth, previewHeight), 0, 0);
+  }
+  // 放大绘制到主 canvas（尺寸 = 全分辨率）
+  ctx.clearRect(0, 0, ow, oh);
+  ctx.drawImage(off, 0, 0, previewWidth, previewHeight, 0, 0, ow, oh);
+  // 直方图用预览结果（快）
+  updateHistogram(clamped);
+  sourceData = od;
+}
+
+// 松手 / 精确保存时使用：原始分辨率精确渲染
+function renderFull() {
   const main = document.getElementById('mainCanvas');
   const ctx = main.getContext('2d');
   if (viewMode === 'original') {
     ctx.putImageData(new ImageData(new Uint8ClampedArray(sourceData.data), imageWidth, imageHeight), 0, 0);
     updateHistogram(sourceData.data);
-  } else {
-    let out;
-    // 无图层时回退到旧路径（仅当前全局 params）
-    if (layers.length <= 1) {
-      const clamped = new Uint8ClampedArray(sourceData.data);
-      applyLayer(clamped, params);
-      out = clamped;
-    } else {
-      out = renderComposite();
-    }
-    ctx.putImageData(new ImageData(out, imageWidth, imageHeight), 0, 0);
-    updateHistogram(out);
+    return;
   }
+  const clamped = new Uint8ClampedArray(sourceData.data);
+  applyLayer(clamped, params);
+  ctx.putImageData(new ImageData(clamped, imageWidth, imageHeight), 0, 0);
+  updateHistogram(clamped);
 }
 
 // 覆盖导出，使用渲染管线输出实际图层效果
