@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LR Glass 调色工具 · V1.6 桌面版 by X1a0ye</title>
+<style>
+  /* iOS 磨砂玻璃 */
+  :root {
+    --glass-bg: rgba(255,255,255,0.12);
+    --glass-border: rgba(255,255,255,0.22);
+    --text-primary: #f5f5f7;
+    --text-secondary: rgba(255,255,255,0.65);
+    --text-tertiary: rgba(255,255,255,0.38);
+    --accent: #0a84ff;
+    --accent-hover: #3395ff;
+    --danger: #ff453a;
+    --shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: radial-gradient(1200px 800px at 20% 10%, #3a3d52 0%, #2b2d3a 40%, #1a1b24 100%);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hidden { display: none !important; }
+
+  /* 按钮 */
+  .btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 7px 14px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all .15s ease;
+    white-space: nowrap;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .btn:hover { background: rgba(255,255,255,0.2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.danger:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .btn:active { transform: scale(.96); }
+
+  /* 顶部栏 */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: rgba(30,30,40,0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    z-index: 50;
+    flex-wrap: wrap;
+  }
+  header .app-title {
+    font-size: 15px; font-weight: 600; letter-spacing: .3px;
+    display: flex; align-items: center; gap: 8px; white-space: nowrap; margin-right: 8px;
+  }
+  header .app-title .dota {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff9f0a, #ff453a, #bf5af2, #0a84ff, #30d158);
+  }
+  header .spacer { flex: 1; }
+
+  /* 三段式 LR 布局 */
+  .workspace {
+    display: grid;
+    grid-template-columns: 288px 1fr 320px;
+    flex: 1;
+    overflow: hidden;
+    gap: 10px;
+    padding: 10px;
+  }
+  .sidebar-left, .sidebar-right {
+    border-radius: 14px;
+    overflow-y: auto;
+    padding: 14px;
+    background: rgba(25,25,33,0.5);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid var(--glass-border);
+  }
+  .viewport {
+    border-radius: 14px;
+    position: relative;
+    background: rgba(10,10,14,0.85);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }
+
+  /* 调色分组 */
+  .panel-group { margin-bottom: 16px; }
+  .panel-group > h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-tertiary); margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .panel-group > h3 .reset {
+    color: var(--accent); cursor: pointer; font-size: 11px;
+    text-transform: none; letter-spacing: 0; background: none; border: none;
+  }
+  .panel-group > h3 .reset:hover { text-decoration: underline; }
+
+  /* 滑块 */
+  .control { margin-bottom: 9px; }
+  .control-header {
+    display: flex; justify-content: space-between; margin-bottom: 2px;
+    font-size: 12px; color: var(--text-secondary);
+  }
+  .control-header .value {
+    color: var(--accent); font-family: "SF Mono", Consolas, monospace; font-size: 11px;
+  }
+  .control input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,0.14); outline: none; cursor: pointer;
+  }
+  .control input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--accent); cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.5);
+  }
+
+  canvas { display: block; }
+  .canvas-wrap { position: relative; max-width: 100%; max-height: 100%; }
+
+  .view-controls {
+    position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; background: rgba(30,30,40,0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    padding: 6px 10px; border-radius: 12px;
+    border: 1px solid var(--glass-border); z-index: 10;
+  }
+  .view-controls .btn { font-size: 12px; padding: 5px 11px; }
+  .view-controls .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    color: var(--text-secondary); text-align: center;
+  }
+  .empty-state .icon {
+    width: 80px; height: 80px; border-radius: 22px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+    display: flex; align-items: center; justify-content: center; font-size: 34px;
+  }
+  .empty-state p { font-size: 14px; line-height: 1.8; }
+  .drop-overlay {
+    position: absolute; inset: 0;
+    border: 2.5px dashed var(--accent);
+    background: rgba(10,132,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--accent);
+    pointer-events: none; border-radius: 14px; z-index: 20;
+  }
+
+  .histogram {
+    position: absolute; top: 14px; right: 14px; width: 200px; height: 80px;
+    background: rgba(0,0,0,0.5); border-radius: 10px; padding: 6px; z-index: 10;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .histogram canvas { width: 100%; height: 100%; }
+  .img-info {
+    position: absolute; top: 14px; left: 14px;
+    background: rgba(0,0,0,0.5); padding: 7px 12px; border-radius: 10px;
+    font-size: 12px; font-family: "SF Mono", Consolas, monospace; z-index: 10;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .compare-divider {
+    position: absolute; top: 0; bottom: 0; width: 2px; background: #fff;
+    cursor: ew-resize; z-index: 15; display: none;
+  }
+  .compare-left {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 50%;
+    overflow: hidden; z-index: 5; display: none;
+  }
+  .compare-left .tag {
+    position: absolute; top: 14px; left: 14px;
+    background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 8px;
+    font-size: 11px; color: #fff; z-index: 6;
+  }
+
+  /* 右侧 */
+  .sidebar-title {
+    font-size: 13px; font-weight: 600; margin: 12px 0 10px; letter-spacing: .3px;
+  }
+  .sidebar-title small { color: var(--text-tertiary); font-weight: 400; font-size: 11px; margin-left: 6px; }
+  .preset-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+  .field-input {
+    background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border);
+    color: var(--text-primary); padding: 9px 12px; border-radius: 10px;
+    font-size: 13px; width: 100%; transition: border .15s;
+  }
+  .field-input::placeholder { color: var(--text-tertiary); }
+  .field-input:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.12); }
+
+  .preset-list { list-style: none; display: flex; flex-direction: column; gap: 6px; max-height: 32vh; overflow-y: auto; }
+  .preset-item {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 8px 10px; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .preset-item:hover { border-color: var(--accent); background: rgba(255,255,255,0.1); }
+  .preset-item .p-info { flex: 1; min-width: 0; }
+  .preset-item .p-name { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .preset-item .p-meta { font-size: 11px; color: var(--text-tertiary); font-family: "SF Mono", Consolas, monospace; }
+  .preset-item .p-actions { display: flex; gap: 2px; flex-shrink: 0; }
+  .icon-btn {
+    background: transparent; border: none; color: var(--text-tertiary);
+    cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 6px;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.12); color: var(--text-primary); }
+  .tag-list { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tag {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-secondary); padding: 3px 11px; border-radius: 20px; font-size: 12px; cursor: pointer;
+  }
+  .tag:hover { background: rgba(255,255,255,0.16); }
+  .tag.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* 历史步骤 */
+  .hist-bar { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .hist-bar .btn { font-size: 12px; padding: 5px 10px; }
+  .history-list { list-style: none; max-height: 30vh; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+  .history-step {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border-radius: 8px; font-size: 12px;
+    color: var(--text-secondary); cursor: pointer; border: 1px solid transparent;
+  }
+  .history-step:hover { background: rgba(255,255,255,0.07); }
+  .history-step.current {
+    background: rgba(10,132,255,0.16);
+    border-color: var(--accent); color: var(--text-primary); font-weight: 500;
+  }
+  .history-step .h-index { color: var(--text-tertiary); font-family: "SF Mono", monospace; font-size: 10px; width: 16px; }
+  .history-step .h-desc { flex: 1; }
+  .history-step .h-val { color: var(--accent); font-family: "SF Mono", monospace; font-size: 11px; }
+
+  /* API 区 */
+  .api-box { margin-top: 14px; }
+  .api-box textarea { font-family: "SF Mono", Consolas, monospace; font-size: 12px; min-height: 54px; }
+  .api-list { display: flex; flex-direction: column; gap: 6px; max-height: 170px; overflow-y: auto; margin-top: 8px; }
+  .api-item {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 8px 10px; font-size: 12px;
+  }
+  .api-item .api-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .api-item .api-name { font-weight: 600; flex: 1; }
+  .api-item .api-desc { color: var(--text-tertiary); font-size: 11px; }
+  .api-badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 12px;
+    background: rgba(10,132,255,0.2); color: var(--accent-hover);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 26px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(40,40,50,0.85); backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border); color: var(--text-primary);
+    padding: 11px 22px; border-radius: 12px; box-shadow: var(--shadow);
+    font-size: 13px; opacity: 0; transition: all .3s ease;
+    pointer-events: none; z-index: 1000;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 1000px) { .workspace { grid-template-columns: 1fr; } .sidebar-right { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="app-title"><span class="dota"></span> LR Glass 调色工具 <small style="font-weight:400;font-size:11px;color:var(--text-tertiary);margin-left:6px;">V1.6 桌面版 by X1a0ye</small></div>
+  <button class="btn primary" onclick="document.getElementById('fileInput').click()">打开图片</button>
+  <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFile(event)">
+  <button class="btn" onclick="undoAction()" id="undoBtn" disabled>撤销</button>
+  <button class="btn" onclick="redoAction()" id="redoBtn" disabled>重做</button>
+  <button class="btn" onclick="resetAll(true)">重置全部</button>
+  <button class="btn" onclick="downloadImage()">导出图片</button>
+  <span class="spacer"></span>
+</header>
+
+<div class="workspace">
+  <!-- 左侧：调色面板 -->
+  <div class="sidebar-left">
+    <div class="panel-group">
+      <h3>基础调整 <button class="reset" onclick="resetGroup(['exposure','contrast','highlights','shadows','whites','blacks'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>曝光</span><span class="value" id="v-exposure">0</span></div><input type="range" id="exposure" min="-2" max="2" step="0.05" value="0" data-label="曝光"></div>
+      <div class="control"><div class="control-header"><span>对比度</span><span class="value" id="v-contrast">0</span></div><input type="range" id="contrast" min="-100" max="100" step="1" value="0" data-label="对比度"></div>
+      <div class="control"><div class="control-header"><span>高光</span><span class="value" id="v-highlights">0</span></div><input type="range" id="highlights" min="-100" max="100" step="1" value="0" data-label="高光"></div>
+      <div class="control"><div class="control-header"><span>阴影</span><span class="value" id="v-shadows">0</span></div><input type="range" id="shadows" min="-100" max="100" step="1" value="0" data-label="阴影"></div>
+      <div class="control"><div class="control-header"><span>白色色阶</span><span class="value" id="v-whites">0</span></div><input type="range" id="whites" min="-100" max="100" step="1" value="0" data-label="白色"></div>
+      <div class="control"><div class="control-header"><span>黑色色阶</span><span class="value" id="v-blacks">0</span></div><input type="range" id="blacks" min="-100" max="100" step="1" value="0" data-label="黑色"></div>
+    </div>
+    <div class="panel-group">
+      <h3>白平衡 <button class="reset" onclick="resetGroup(['temp','tint'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>色温</span><span class="value" id="v-temp">0</span></div><input type="range" id="temp" min="-100" max="100" step="1" value="0" data-label="色温"></div>
+      <div class="control"><div class="control-header"><span>色调</span><span class="value" id="v-tint">0</span></div><input type="range" id="tint" min="-100" max="100" step="1" value="0" data-label="色调"></div>
+    </div>
+    <div class="panel-group">
+      <h3>颜色 <button class="reset" onclick="resetGroup(['saturation','vibrance'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>饱和度</span><span class="value" id="v-saturation">0</span></div><input type="range" id="saturation" min="-100" max="100" step="1" value="0" data-label="饱和度"></div>
+      <div class="control"><div class="control-header"><span>自然饱和度</span><span class="value" id="v-vibrance">0</span></div><input type="range" id="vibrance" min="-100" max="100" step="1" value="0" data-label="自然饱和度"></div>
+    </div>
+    <div class="panel-group">
+      <h3>效果 <button class="reset" onclick="resetGroup(['clarity','grain','vignette'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>清晰度</span><span class="value" id="v-clarity">0</span></div><input type="range" id="clarity" min="-100" max="100" step="1" value="0" data-label="清晰度"></div>
+      <div class="control"><div class="control-header"><span>颗粒</span><span class="value" id="v-grain">0</span></div><input type="range" id="grain" min="0" max="100" step="1" value="0" data-label="颗粒"></div>
+      <div class="control"><div class="control-header"><span>暗角</span><span class="value" id="v-vignette">0</span></div><input type="range" id="vignette" min="-100" max="100" step="1" value="0" data-label="暗角"></div>
+    </div>
+    <div class="panel-group">
+      <h3>红色通道 <button class="reset" onclick="resetGroup(['red-h','red-s','red-l'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>色相</span><span class="value" id="v-red-h">0</span></div><input type="range" id="red-h" min="-100" max="100" step="1" value="0" data-label="红色色相"></div>
+      <div class="control"><div class="control-header"><span>饱和度</span><span class="value" id="v-red-s">0</span></div><input type="range" id="red-s" min="-100" max="100" step="1" value="0" data-label="红色饱和度"></div>
+      <div class="control"><div class="control-header"><span>明度</span><span class="value" id="v-red-l">0</span></div><input type="range" id="red-l" min="-100" max="100" step="1" value="0" data-label="红色明度"></div>
+    </div>
+    <div class="panel-group">
+      <h3>绿色通道 <button class="reset" onclick="resetGroup(['green-h','green-s','green-l'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>色相</span><span class="value" id="v-green-h">0</span></div><input type="range" id="green-h" min="-100" max="100" step="1" value="0" data-label="绿色色相"></div>
+      <div class="control"><div class="control-header"><span>饱和度</span><span class="value" id="v-green-s">0</span></div><input type="range" id="green-s" min="-100" max="100" step="1" value="0" data-label="绿色饱和度"></div>
+      <div class="control"><div class="control-header"><span>明度</span><span class="value" id="v-green-l">0</span></div><input type="range" id="green-l" min="-100" max="100" step="1" value="0" data-label="绿色明度"></div>
+    </div>
+    <div class="panel-group">
+      <h3>蓝色通道 <button class="reset" onclick="resetGroup(['blue-h','blue-s','blue-l'])">重置</button></h3>
+      <div class="control"><div class="control-header"><span>色相</span><span class="value" id="v-blue-h">0</span></div><input type="range" id="blue-h" min="-100" max="100" step="1" value="0" data-label="蓝色色相"></div>
+      <div class="control"><div class="control-header"><span>饱和度</span><span class="value" id="v-blue-s">0</span></div><input type="range" id="blue-s" min="-100" max="100" step="1" value="0" data-label="蓝色饱和度"></div>
+      <div class="control"><div class="control-header"><span>明度</span><span class="value" id="v-blue-l">0</span></div><input type="range" id="blue-l" min="-100" max="100" step="1" value="0" data-label="蓝色明度"></div>
+    </div>
+  </div>
+  <!-- 中央预览 -->
+  <div class="viewport" id="viewport"
+       ondragover="event.preventDefault(); document.getElementById('dropOverlay').classList.remove('hidden')"
+       ondragleave="event.preventDefault(); document.getElementById('dropOverlay').classList.add('hidden')"
+       ondrop="handleDrop(event)">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">IMG</div>
+      <p>拖拽图片到这里，或点击「打开图片」开始调色</p>
+    </div>
+    <div class="drop-overlay hidden" id="dropOverlay">松开鼠标导入图片</div>
+    <div class="canvas-wrap hidden" id="canvasWrap">
+      <div class="img-info" id="imgInfo"></div>
+      <div class="histogram"><canvas id="histogramCanvas"></canvas></div>
+      <div id="compareLeft" class="compare-left">
+        <canvas id="origCanvas"></canvas>
+        <div class="tag">原图</div>
+      </div>
+      <canvas id="mainCanvas"></canvas>
+      <div class="compare-divider" id="compareDivider"></div>
+    </div>
+    <div class="view-controls">
+      <button class="btn active" id="viewOriginal" onclick="setViewMode('original', this)">原图</button>
+      <button class="btn" id="viewEdited" onclick="setViewMode('edited', this)">调整</button>
+      <button class="btn" id="viewSplit" onclick="setViewMode('split', this)">对比</button>
+    </div>
+    <div style="position:absolute;bottom:64px;right:14px;z-index:25;display:none;" id="splitHint">
+      <button class="btn" onclick="resetSplit()">重置分割线</button>
+    </div>
+  </div>
+
+  <!-- 右侧：预设 + 历史 + API -->
+  <div class="sidebar-right">
+    <div class="sidebar-title">色彩预设管理</div>
+    <div class="preset-form">
+      <input type="text" id="presetName" class="field-input" placeholder="预设名称，如：日系清新">
+      <input type="text" id="presetTag" class="field-input" placeholder="标签，逗号分隔：日系, 小清新">
+      <button class="btn primary" onclick="savePreset()">保存预设</button>
+    </div>
+
+    <div class="sidebar-title">标签筛选</div>
+    <div class="tag-list" id="tagList">
+      <span class="tag active" data-tag="" onclick="setTag('')">全部</span>
+    </div>
+
+    <div class="sidebar-title">我的预设 <small id="presetCount"></small></div>
+    <input type="text" class="field-input" id="searchPreset" placeholder="搜索预设..." oninput="renderPresets()">
+    <ul class="preset-list" id="presetList"></ul>
+    <div id="presetEmpty" style="color:var(--text-tertiary);text-align:center;padding:14px;font-size:13px;">暂无预设，保存一个吧！</div>
+
+    <div class="sidebar-title">操作历史（步骤）</div>
+    <div class="hist-bar">
+      <button class="btn" onclick="undoAction()" id="histUndo">撤销</button>
+      <button class="btn" onclick="redoAction()" id="histRedo">重做</button>
+      <button class="btn" onclick="applyHistory(-1)" id="histNew">新建</button>
+    </div>
+    <ul class="history-list" id="historyList"></ul>
+    <div id="historyEmpty" style="color:var(--text-tertiary);text-align:center;padding:10px;font-size:12px;">尚无历史步骤</div>
+
+    <div class="sidebar-title">API 接入区</div>
+    <div class="api-box">
+      <textarea id="apiBody" class="field-input" placeholder="粘贴 JSON 参数，如：{\n  &quot;exposure&quot;: 0.5,\n  &quot;contrast&quot;: 20\n}  （键名对应滑块 id）"></textarea>
+      <div style="display:flex; gap:6px; margin-top:8px;">
+        <button class="btn primary" onclick="applyApiJson()">应用参数</button>
+        <button class="btn" onclick="fetchApiEndpoints()">调用远端配置</button>
+      </div>
+      <input type="text" id="apiUrl" class="field-input" style="margin-top:8px;" placeholder="可选：远端 API 地址（返回 JSON 参数对象）">
+    </div>
+    <div class="sidebar-title">已注册 API 接口</div>
+    <div class="api-list" id="apiList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===== 模块化脚本（原单文件脚本按职责拆分） ===== -->
+<script src="src/state.js"></script>
+<script src="src/history.js"></script>
+<script src="src/controls.js"></script>
+<script src="src/view.js"></script>
+<script src="src/color.js"></script>
+<script src="src/blend.js"></script>
+<script src="src/layers.js"></script>
+<script src="src/blur.js"></script>
+<script src="src/adjust.js"></script>
+<script src="src/app.js"></script>
+
+<style>
+  /* 图层面板样式 */
+  .layer-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; transition: border-color .15s, background .15s; }
+  .layer-item.active { border-color: var(--accent); background: rgba(10,132,255,0.12); }
+  .layer-item:hover { background: rgba(255,255,255,0.1); }
+  .layer-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .layer-name { flex: 1; font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .layer-sub { display: flex; flex-direction: column; gap: 6px; }
+  .layer-sub label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--text-secondary); }
+  .layer-sub select { background: rgba(255,255,255,0.1); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 6px; padding: 3px 6px; font-size: 11px; max-width: 120px; }
+  .layer-sub input[type=range] { flex: 1; min-width: 60px; height: 4px; -webkit-appearance: none; background: rgba(255,255,255,0.14); border-radius: 2px; }
+  .layer-sub input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); }
+  #layerList { max-height: 30vh; overflow-y: auto; }
+</style>
+</body>
+</html>
