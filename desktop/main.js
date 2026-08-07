@@ -1,3 +1,7 @@
+// 关键：清除环境变量 ELECTRON_RUN_AS_NODE。
+// 部分环境（如网吧/兼容性设置）会预设该变量，导致 Electron 以 Node 模式运行，
+// 表现为 require('electron') 返回路径字符串、app 为 undefined、窗口无法创建。
+delete process.env.ELECTRON_RUN_AS_NODE;
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
