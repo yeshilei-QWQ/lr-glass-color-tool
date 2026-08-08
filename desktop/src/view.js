@@ -146,8 +146,10 @@ function clampPan() {
   const v = panViewportSize();
   const dw = Math.floor(imageWidth * currentScale());
   const dh = Math.floor(imageHeight * currentScale());
-  if (dw <= v.w) panX = 0; else panX = Math.max(v.w - dw, Math.min(0, panX));
-  if (dh <= v.h) panY = 0; else panY = Math.max(v.h - dh, Math.min(0, panY));
+  // 以居中为基准的对称边界：图像任一边缘可平移到视口对应边缘
+  const hx = (dw - v.w) / 2, hy = (dh - v.h) / 2;
+  if (dw <= v.w) panX = 0; else panX = Math.max(-hx, Math.min(hx, panX));
+  if (dh <= v.h) panY = 0; else panY = Math.max(-hy, Math.min(hy, panY));
 }
 function applyPan() {
   panEnabled = isPanEnabled();
@@ -181,13 +183,16 @@ function initViewportGestures() {
         if (drag.held) { drag.held = false; holdPrev = null; viewMode = 'edited'; render(); }
       }
       if (drag.moved && movable) {
+        // Lightroom 手感：拖动过程自由跟手，不硬 clamp；松手后再归位到有效边界
         panX = drag.px + dx; panY = drag.py + dy;
-        clampPan(); applyPan();
+        var wT = document.getElementById('canvasWrap');
+        if (wT) wT.style.transform = 'translate(calc(-50% + ' + panX + 'px), calc(-50% + ' + panY + 'px))';
       }
     }
     function onUp() {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      clampPan(); applyPan();
       if (drag.held && holdPrev !== null) { viewMode = holdPrev; holdPrev = null; render(); }
       drag = null;
     }

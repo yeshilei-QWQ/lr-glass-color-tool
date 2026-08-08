@@ -69,32 +69,23 @@ function handleDrop(event) {
   else showToast('仅支持图片文件');
 }
 
+// 统一走导入队列（图库），保证同一套解码/队列/激活逻辑
 function loadImageFromFile(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      const MAX = 2048;
-      let w = img.naturalWidth, h = img.naturalHeight;
-      if (w > MAX || h > MAX) {
-        const ratio = Math.min(MAX / w, MAX / h);
-        w = Math.floor(w * ratio);
-        h = Math.floor(h * ratio);
+  if (window.importQueue && importQueue.addImages) {
+    importQueue.addImages([file], function (added) {
+      if (added && added.length) {
+        pushHistory('导入图片：' + added[0].name);
+        renderPresets();
       }
-      imageWidth = w; imageHeight = h;
-      sourceData = getImageData(img, w, h);
-      // 生成降采样预览数据（用于滑块拖动时的流畅预览）
-      buildPreviewFromImage(img);
-      // 修复：先初始化画布尺寸，再触发渲染，避免 putImageData 尺寸不匹配抛 IndexSizeError
-      setupCanvas();
-      resetAll(false);
-      pushHistory('导入图片');
-      render();
-      renderPresets();
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+    });
+  } else {
+    // 兜底：直接走队列 API（在 app 已挂载时必进上方分支）
+    if (file && file.type && file.type.indexOf('image/') === 0) {
+      importQueue.addImages([file]);
+    } else if (file) {
+      showToast('仅支持图片文件');
+    }
+  }
 }
 
 function getImageData(img, w, h) {

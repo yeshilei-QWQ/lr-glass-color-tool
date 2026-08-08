@@ -299,6 +299,24 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   @media (max-width: 1000px) { .workspace { grid-template-columns: 1fr; } .sidebar-right { display: none; } }
+  /* --- import panel --- */
+  .p-count { color: var(--text-tertiary); font-weight: 400; font-size: 11px; margin-left: 6px; }
+  .drop-zone { border: 1.5px dashed rgba(255,255,255,0.18); border-radius: 10px; padding: 16px 12px; text-align: center; color: #8a8f98; cursor: pointer; transition: all .15s; background: rgba(255,255,255,0.02); }
+  .drop-zone:hover, .drop-zone.over { border-color: #4aa3ff; background: rgba(255,255,255,0.05); color: #e6e8eb; }
+  .dz-icon { font-size: 22px; line-height: 1; margin-bottom: 6px; }
+  .dz-text { font-size: 12px; margin-bottom: 10px; }
+  .import-pick { width: 100%; }
+  .import-list { list-style: none; margin: 10px 0 0; padding: 0; max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+  .import-item { display: flex; align-items: center; gap: 8px; padding: 5px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; background: rgba(255,255,255,0.02); }
+  .import-item:hover { background: rgba(255,255,255,0.05); }
+  .import-item.active { border-color: #4aa3ff; background: rgba(255,255,255,0.06); }
+  .import-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; background: #000; flex: none; }
+  .import-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .import-name { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .import-meta { font-size: 11px; color: var(--text-tertiary); }
+  .import-del { border: none; background: transparent; color: #8a8f98; cursor: pointer; font-size: 14px; line-height: 1; padding: 2px 6px; border-radius: 6px; }
+  .import-del:hover { color: #fff; background: rgba(255,80,80,0.2); }
+  .import-list-empty { display: none; text-align: center; color: var(--text-tertiary); font-size: 11px; padding: 6px 0; }
 </style>
 </head>
 <body>
@@ -316,6 +334,18 @@
 <div class="workspace">
   <!-- 左侧：调色面板 -->
   <div class="sidebar-left">
+    <!-- Import library / batch entry -->
+    <div class="panel-group import-panel">
+      <h3>导入 <small class="p-count" id="importCount">0 张</small></h3>
+      <div class="drop-zone" id="dropZone">
+        <div class="dz-icon">&#8679;</div>
+        <div class="dz-text">拖拽图片到此处</div>
+        <button class="btn primary import-pick" id="importPickBtn">选择文件</button>
+        <input type="file" id="importFile" accept="image/*" multiple class="hidden">
+      </div>
+      <ul class="import-list" id="importList"></ul>
+      <div class="import-list-empty" id="importListEmpty">暂无图片，请导入</div>
+    </div>
     <div class="panel-group">
       <h3>基础调整 <button class="reset" onclick="resetGroup(['exposure','contrast','highlights','shadows','whites','blacks'])">重置</button></h3>
       <div class="control"><div class="control-header"><span>曝光</span><span class="value" id="v-exposure">0</span></div><input type="range" id="exposure" min="-2" max="2" step="0.05" value="0" data-label="曝光"></div>
@@ -361,13 +391,10 @@
     </div>
   </div>
   <!-- 中央预览 -->
-  <div class="viewport" id="viewport"
-       ondragover="event.preventDefault(); document.getElementById('dropOverlay').classList.remove('hidden')"
-       ondragleave="event.preventDefault(); document.getElementById('dropOverlay').classList.add('hidden')"
-       ondrop="handleDrop(event)">
+  <div class="viewport" id="viewport">
     <div class="empty-state" id="emptyState">
       <div class="icon">IMG</div>
-      <p>拖拽图片到这里，或点击「打开图片」开始调色</p>
+      <p>请使用左侧「导入」面板或顶部「打开图片」导入图片</p>
     </div>
     <div class="drop-overlay hidden" id="dropOverlay">松开鼠标导入图片</div>
     <div class="canvas-wrap hidden" id="canvasWrap">
@@ -448,7 +475,8 @@
 <script src="src/layers.js"></script>
 <script src="src/blur.js"></script>
 <script src="src/adjust.js"></script>
-<script src="src/app.js"></script>
+<script src="src/importer.js"></script>
+  <script src="src/app.js"></script>
 
 
 </body>
