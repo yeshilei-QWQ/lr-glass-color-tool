@@ -6,7 +6,7 @@
                     "start":  "electron ."
                 },
     "description":  "LR Glass 闂佽崵濮撮鍛村疮閾忣偆鐝跺┑鐘插亞閸熷懘鏌曟径鍫濆姎鐎?- Lightroom 濠碉紕鍋涢鍛偓娑掓櫊閹呯矙濞嗙偓绂嗛悗鍏夊亾闁告洦鍓氶妴鍐煟閻樺樊鍎忛柛鐔绘珪缁旂喐绻濋崘鈺佸妳闂佸搫鍟崐褰掑汲?(Electron)",
-    "version":  "2.2.0-lite",
+    "version":  "2.2.5-lite",
     "author":  "X1a0ye",
     "name":  "lr-glass",
     "main":  "main.js",
