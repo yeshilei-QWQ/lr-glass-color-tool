@@ -45,9 +45,9 @@
 
 ---
 
-## 最新版本（V2.1-lite）
+## 最新版本（V2.2-lite）
 
-> `/desktop` — 精简版，详见 [desktop/README](./desktop/README.md)
+> V2.2-lite —— Electron 桌面版（Windows 便携版 exe），详见 [desktop/README](./desktop/README.md)
 
 V1 是约 64KB 的单文件（两个 `<script>` 块相互覆盖），V1.5 拆分为 **HTML + 10 个 JS 模块**，为后续扩展与 Electron 封装打好结构基础。
 
