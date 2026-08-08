@@ -95,4 +95,15 @@ document.addEventListener('DOMContentLoaded', function(){
   updateTagList();
   renderPresets();
   updateHistoryUI();
+  updateZoomLabel();
+  initHoldComparison();
 });
+
+
+// histogram channel toggle
+function setHistogramChannel(ch) {
+  histChannel = ch;
+  var btns = document.querySelectorAll('.hist-ch-btn');
+  if (btns.length) btns.forEach(function (b) { b.classList.toggle('active', b.dataset.ch === ch); });
+  render();
+}

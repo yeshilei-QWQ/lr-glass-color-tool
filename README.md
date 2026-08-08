@@ -21,7 +21,7 @@
 ### 迭代进度
 - **V2-lite**（已完成）：移除 API/搜索框/图层系统，回归精简
 - **V2.1-lite**（已完成）：滑块流畅（降采样预览约 8 倍提速）+ 数值直接输入
-- **V2.2-lite**（规划中）：预览缩放功能
+- **V2.2-lite**（已完成）：预览缩放 + 直方图增强 + 长按看原图
 - **V2.3-lite**（规划中）：色轮功能
 
 ### 原则
@@ -34,7 +34,8 @@
 
 | 版本 | 说明 | 位置 |
 | --- | --- | --- |
-| **V2.1-lite**（最新） | 性能优化版 · Windows 便携版 exe | [`/desktop/dist`](./desktop/dist/) |
+| **V2.2-lite**（最新） | 预览缩放 + 直方图增强 + 长按看原图 · Windows 便携版 exe | [`/desktop/dist`](./desktop/dist/) |
+| **V2.1-lite** | 性能优化版 · Windows 便携版 exe | [`/desktop/dist`](./desktop/dist/) |
 | **V2.0** | Electron 桌面版（含图层/API） | `v2.0` 标签 |
 | **V2-lite** | 精简轻量版（移除图层/API） | `v2-lite` 标签 |
 | **V1.6** | Electron 桌面应用版 | [`/desktop`](./desktop/) |

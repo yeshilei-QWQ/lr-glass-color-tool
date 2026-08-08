@@ -14,28 +14,49 @@ function render() {
 }
 
 function updateHistogram(data) {
+  if (!data) return;
   const canvas = document.getElementById('histogramCanvas');
-  canvas.width = 200; canvas.height = 68;
+  canvas.width = 200; canvas.height = 84;
   const ctx = canvas.getContext('2d');
-  const bins = 50;
-  const lum = new Array(bins).fill(0);
+  const bins = 100;
+  const hR = new Array(bins).fill(0);
+  const hG = new Array(bins).fill(0);
+  const hB = new Array(bins).fill(0);
+  const hL = new Array(bins).fill(0);
   const n = data.length;
-  let max = 0;
   for (let i = 0; i < n; i += 4) {
-    const L = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-    const idx = Math.min(bins - 1, Math.floor(L / 256 * bins));
-    lum[idx]++;
-    if (lum[idx] > max) max = lum[idx];
+    const r = data[i], g = data[i+1], b = data[i+2];
+    hR[Math.min(bins-1, (r/256*bins)|0)]++;
+    hG[Math.min(bins-1, (g/256*bins)|0)]++;
+    hB[Math.min(bins-1, (b/256*bins)|0)]++;
+    const L = 0.299*r + 0.587*g + 0.114*b;
+    hL[Math.min(bins-1, (L/256*bins)|0)]++;
   }
-  ctx.clearRect(0, 0, 200, 68);
-  ctx.fillStyle = 'rgba(255,255,255,.8)';
-  const bw = 200 / bins;
-  for (let j = 0; j < bins; j++) {
-    const h = max > 0 ? (lum[j] / max) * 60 : 0;
-    ctx.fillRect(j * bw, 68 - h, bw - 1, h);
+  const mR=Math.max.apply(null,hR), mG=Math.max.apply(null,hG), mB=Math.max.apply(null,hB), mL=Math.max.apply(null,hL);
+  ctx.clearRect(0,0,200,84);
+  const bw = 200/bins, hh = 76;
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  for (let j=0;j<bins;j+=10) ctx.fillRect(j*bw, 0, bw, hh);
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(0,0,200,2);
+  function bars(arr, maxv, color){
+    ctx.fillStyle = color;
+    for (let j=0;j<bins;j++){ const h=(arr[j]/maxv)*hh; ctx.fillRect(j*bw+0.2, hh-h, Math.max(0.6,bw-0.4), h); }
   }
-}
-// ================== 色彩空间工具 ==================
+  if (histChannel === 'r'){ bars(hR,mR,'rgba(255,82,82,0.95)'); }
+  else if (histChannel === 'g'){ bars(hG,mG,'rgba(48,209,88,0.95)'); }
+  else if (histChannel === 'b'){ bars(hB,mB,'rgba(90,150,255,0.95)'); }
+  else if (histChannel === 'rgb'){
+    bars(hR,mR,'rgba(255,82,82,0.55)');
+    bars(hG,mG,'rgba(48,209,88,0.55)');
+    bars(hB,mB,'rgba(90,150,255,0.55)');
+  } else {
+    bars(hR,mR,'rgba(255,82,82,0.16)');
+    bars(hG,mG,'rgba(48,209,88,0.16)');
+    bars(hB,mB,'rgba(90,150,255,0.16)');
+    bars(hL,mL,'rgba(255,255,255,0.95)');
+  }
+}// ================== 色彩空间工具 ==================
 function rgbToHsl(r, g, b) {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);

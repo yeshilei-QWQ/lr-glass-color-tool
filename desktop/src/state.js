@@ -11,6 +11,11 @@ let isPreviewRender = false;
 let viewMode = 'original';
 let splitRatio = 0.5;
 let lastToast = null;
+// 预览缩放：fit=适应窗口  actual=100%  custom=自定义(zoom)
+let zoomMode = 'fit';
+let zoom = 1;
+let fitScale = 1;
+let histChannel = 'lum'; // 直方图通道
 
 let params = {
   exposure: 0, contrast: 0, highlights: 0, shadows: 0, whites: 0, blacks: 0,

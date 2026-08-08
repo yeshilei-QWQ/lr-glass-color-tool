@@ -25,22 +25,14 @@ function setupCanvas() {
   const viewport = document.getElementById('viewport');
   wrap.classList.remove('hidden');
 
-  const vw = viewport.clientWidth, vh = viewport.clientHeight;
-  const scale = Math.min((vw - 40) / imageWidth, (vh - 40) / imageHeight, 2);
-  const dispW = Math.floor(imageWidth * scale);
-  const dispH = Math.floor(imageHeight * scale);
-
   const main = document.getElementById('mainCanvas');
   main.width = imageWidth; main.height = imageHeight;
-  main.style.width = dispW + 'px';
-  main.style.height = dispH + 'px';
-
   const orig = document.getElementById('origCanvas');
   orig.width = imageWidth; orig.height = imageHeight;
-  orig.style.width = dispW + 'px';
-  orig.style.height = dispH + 'px';
   const octx = orig.getContext('2d');
   octx.putImageData(new ImageData(new Uint8ClampedArray(sourceData.data), imageWidth, imageHeight), 0, 0);
+  zoomMode = 'fit';
+  applyZoom();
 
   document.getElementById('imgInfo').textContent = imageWidth + ' x ' + imageHeight + 'px';
 
@@ -62,6 +54,8 @@ function setViewMode(mode, btn) {
   document.querySelectorAll('.view-controls .btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   document.getElementById('splitHint').style.display = mode === 'split' ? 'block' : 'none';
+  const hh = document.getElementById('holdHint');
+  if (hh) hh.style.display = mode === 'edited' ? 'block' : 'none';
   const cl = document.getElementById('compareLeft');
   const divider = document.getElementById('compareDivider');
   if (mode === 'split') {
@@ -84,3 +78,68 @@ function resetSplit() {
   render();
 }
 
+// ================== 预览缩放 ==================
+function applyZoom() {
+  const main = document.getElementById('mainCanvas');
+  if (!main || !sourceData) return;
+  const orig = document.getElementById('origCanvas');
+  let s = zoom;
+  if (zoomMode === 'fit') {
+    const viewport = document.getElementById('viewport');
+    const vw = viewport.clientWidth, vh = viewport.clientHeight;
+    const p = Math.min((vw - 40) / imageWidth, (vh - 40) / imageHeight);
+    fitScale = Math.max(0.02, p);
+    s = fitScale;
+  } else if (zoomMode === 'actual') { s = 1; }
+  const dispW = Math.floor(imageWidth * s);
+  const dispH = Math.floor(imageHeight * s);
+  main.style.width = dispW + 'px';
+  main.style.height = dispH + 'px';
+  if (orig) { orig.style.width = dispW + 'px'; orig.style.height = dispH + 'px'; }
+  updateZoomLabel();
+}
+function setZoom(mode, val) {
+  if (!sourceData) { showToast('\u8bf7\u5148\u6253\u5f00\u56fe\u7247'); return; }
+  zoomMode = mode;
+  if (mode === 'custom' && val) zoom = val;
+  applyZoom();
+  render();
+}
+function zoomIn() {
+  if (!sourceData) { showToast('\u8bf7\u5148\u6253\u5f00\u56fe\u7247'); return; }
+  zoomMode = 'custom';
+  zoom = Math.min(8, (zoom || 1) * 1.25);
+  applyZoom(); render();
+}
+function zoomOut() {
+  if (!sourceData) { showToast('\u8bf7\u5148\u6253\u5f00\u56fe\u7247'); return; }
+  zoomMode = 'custom';
+  zoom = Math.max(0.05, (zoom || 1) / 1.25);
+  applyZoom(); render();
+}
+function zoomFit() { setZoom('fit'); }
+function zoomActual() { setZoom('actual'); }
+function updateZoomLabel() {
+  const el = document.getElementById('zoomLabel'); if (!el) return;
+  const v = zoomMode === 'fit' ? fitScale : (zoomMode === 'actual' ? 1 : zoom);
+  el.textContent = Math.round(v * 100) + '%';
+}
+
+// ================== 长按看原图（调整视图下按住画布临时显示原图） ==================
+let holdPrev = null;
+function initHoldComparison() {
+  const main = document.getElementById('mainCanvas');
+  if (!main) return;
+  function release(ev) {
+    document.removeEventListener('mouseup', release);
+    if (holdPrev !== null) { viewMode = holdPrev; holdPrev = null; render(); }
+  }
+  main.addEventListener('mousedown', function (ev) {
+    if (viewMode === 'original' || viewMode !== 'edited') return;
+    holdPrev = viewMode;
+    viewMode = 'original';
+    exitPreview();
+    render();
+    document.addEventListener('mouseup', release);
+  });
+}
