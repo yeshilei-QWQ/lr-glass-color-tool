@@ -17,11 +17,13 @@ Lightroom 风格桌面调色应用，Windows 便携版 / 源码两种使用方�
 
 ---
 
-## V2.2.5-lite(本次改进)
-- **轻量化拖动手感（Lightroom 式）**：放大后按住画布拖动即可平移查看图片各处，图像跟随鼠标移动
-- **滚轮缩放 · 跟随鼠标**：鼠标滚轮缩放，以指针位置为中心，放大缩小都跟手
+## V2.2.5-lite（本次改进）
+- 专属导入面板（侧边栏图库）：拖放区 / 选择文件 / 缩略列表，支持一次导入多张并点击切换当前编辑图；拖放权限收口到面板本身，画布平移不再误触导入
+- 平移手感（Lightroom 式）：放大后按住画布拖动平移，边界改为居中对称、拖动自由跟手、松手自动归位
+- 滚轮缩放 · 跟随鼠标：以指针位置为中心缩放，放大缩小都跟手
+- 批处理/工作流接口（骨架）：预留 importQueue（imageStack / addImages / activate / setMode），当前单张编辑，将来可切批量
+- 硬件加速/性能接口（骨架）：预留 renderPipeline（register / use / get），当前 CPU 渲染，可插拔 WebGL / WebGPU
 - 缩放工具条 / 直方图 / 图片信息固定在预览区角落，不随画布平移
-
 
 ## V2.2-lite(上一版)
 - **预览缩放**：新增缩放工具条（放大/缩小/100%/适应窗口）
@@ -29,15 +31,12 @@ Lightroom 风格桌面调色应用，Windows 便携版 / 源码两种使用方�
 - **长按看原图**：「调整」视图下按住预览区临时显示原图，松开即恢复（Lightroom 经典交互）
 
 
-- **预览缩放**：新增缩放工具条（放大/缩小/100%/适应窗口）
-- **直方图增强**：从单亮度升级为「亮度 + RGB 三通道」，支持 Lum/RGB/R/G/B 五种显示切换
-- **长按看原图**：「调整」视图下按住预览区临时显示原图，松开即恢复（Lightroom 经典交互）
-## V2.1-lite(前版)
+## V2.1-lite（前版）
 - **自定义应用图标**：玻璃质感深色圆角方块 + 彩虹取色环，贴合调色主题
 - **性能优化**：滑块拖动时用低分辨率降采样预览（约 8 倍提速），松手后自动切回全分辨率精确渲染，彻底消除拖拽卡顿
 - **数值直接输入**：滑块右侧数值改为可编辑输入框，支持精确调参（回车/失焦生效），与滑块双向同步
 - API 接入区 / 搜索框 / 图层系统 在 V2-lite 已移除，历史系统保留
-## V2-lite（本次精简）
+## V2-lite（历史 · 本次精简为过去版本）
 
 移除冗余、聚焦核心调色体验：
 - **移除 API 接入区**（JSON 参数 + 远端调用，现无需求）
@@ -78,9 +77,9 @@ lr-glass-desktop/
 ├── preload.js    预加载脚本
 ├── package.json  electron-builder 配置
 ├── dist/         打包产物
-└── src/          （10 个模块）
-    state.js history.js controls.js view.js
-    color.js blend.js  layers.js blur.js adjust.js app.js
+└── src/          （11 个模块）
+    state.js history.js controls.js view.js color.js
+    blend.js layers.js blur.js adjust.js importer.js app.js
 ```
 
 ## 待办
@@ -90,7 +89,7 @@ lr-glass-desktop/
 ---
 
 ## 版本规划（方案 A：lite 单线，逐步转正）
-- **lite 为主线**持续迭代：V2.2-lite → V2.2-lite → … → V3-lite、V4-lite
+- **lite 为主线**持续迭代：V2.2-lite → V2.2.1-lite → V2.2.5-lite → … → V3-lite、V4-lite
 - 小优化/功能增量 → 次版本号递增（V2.1、V2.2 …）
 - 大重构/里程碑 → 主版本号递增（V3、V4 …）
 - **将来功能齐全成熟后，去掉 `-lite` 后缀**转正为正式版（V4.0、V5.0）

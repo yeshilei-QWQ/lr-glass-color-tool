@@ -22,7 +22,7 @@
 - **V2-lite**（已完成）：移除 API/搜索框/图层系统，回归精简
 - **V2.1-lite**（已完成）：滑块流畅（降采样预览约 8 倍提速）+ 数值直接输入
 - **V2.2-lite**（已完成）：预览缩放 + 直方图增强 + 长按看原图
-- **V2.2.5-lite**（已完成）：缩放拖动查看 + 滚轮缩放跟随鼠标（Lightroom 手感）
+- **V2.2.5-lite**（已完成）：专属导入面板（图库）+ 平移/缩放手感（Lightroom 式）+ 批处理与 GPU 渲染接口骨架
 - **V2.3-lite**（规划中）：色轮功能
 
 ### 原则
@@ -35,7 +35,7 @@
 
 | 版本 | 说明 | 位置 |
 | --- | --- | --- |
-| **V2.2.5-lite**（最新） | 缩放拖动查看 + 滚轮缩放跟随鼠标 · 预览缩放 + 直方图增强 + 长按看原图 · Windows 便携版 exe | [`/desktop/dist`](./desktop/dist/) |
+| **V2.2.5-lite**（最新） | 专属导入面板（图库）+ 平移/缩放（Lightroom 手感）+ 批处理与 GPU 渲染接口骨架 · Windows 便携版 exe | [`/desktop/dist`](./desktop/dist/) |
 | **V2.2-lite** | 预览缩放 + 直方图增强 + 长按看原图 · Windows 便携版 exe | [`/desktop/dist`](./desktop/dist/) |
 | **V2.1-lite** | 滑块流畅（低分辨率降采样预览约 8 倍提速）+ 数值直接输入 · Windows 便携版 exe | [`/desktop/dist`](./desktop/dist/) |
 | **V2.0** | Electron 桌面版（含图层系统 + API 接入） | `v2.0` 标签 |
@@ -49,13 +49,16 @@
 
 ## 最新版本（V2.2.5-lite）
 
-> V2.2.5-lite —— Electron 桌面版，详见 [desktop/README](./desktop/README.md)
+> Electron 桌面精简版，详见 [desktop/README](./desktop/README.md)。
 
-- **轻量化拖动手感（Lightroom 式）**：放大后按住画布拖动即可平移查看图片各处，图像跟随鼠标移动
-- **滚轮缩放 · 跟随鼠标**：鼠标滚轮缩放，以指针位置为中心，放大缩小都跟手
+- **专属导入面板**（侧边栏图库）：拖放区 / 选择文件 / 缩略列表，支持一次导入多张并点击切换当前编辑图
+  - 拖放权限收口到面板本身，预览区画布平移不再误触导入
+  - 预留 `importQueue` 接口（imageStack / addImages / activate / setMode），当前单张编辑，为批处理/工作流铺路
+- **平移手感（Lightroom 式）**：放大后按住画布拖动平移，边界居中对称、拖动自由跟手、松手自动归位
+- **滚轮缩放 · 跟随鼠标**：以指针位置为中心缩放，放大缩小都跟手
+- **硬件加速/性能接口（骨架）**：预留 `renderPipeline`（register / use / get），当前 CPU 渲染，可插拔 WebGL / WebGPU
 - 缩放工具条 / 直方图 / 图片信息固定在预览区角落，不随画布平移
 - 运行：源码 `desktop` 目录执行 `npm start`，或直接使用 `/desktop/dist` 下的 `LR Glass 2.2.5-lite.exe` Windows 便携版
-
 ## 历史版本
 
 ### V2.2-lite
