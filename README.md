@@ -35,12 +35,12 @@
 | 版本 | 说明 | 位置 |
 | --- | --- | --- |
 | **V2.2-lite**（最新） | 预览缩放 + 直方图增强 + 长按看原图 · Windows 便携版 exe | [`/desktop/dist`](./desktop/dist/) |
-| **V2.1-lite** | 性能优化版 · Windows 便携版 exe | [`/desktop/dist`](./desktop/dist/) |
-| **V2.0** | Electron 桌面版（含图层/API） | `v2.0` 标签 |
-| **V2-lite** | 精简轻量版（移除图层/API） | `v2-lite` 标签 |
-| **V1.6** | Electron 桌面应用版 | [`/desktop`](./desktop/) |
-| **V1.5** | 模块化重构版，脚本拆分为独立 JS 文件 | [`/v1.5`](./v1.5/) |
-| **V1** | 首个完整版（单文件 HTML） | `/lr-color-tool.html` |
+| **V2.1-lite** | 滑块流畅（低分辨率降采样预览约 8 倍提速）+ 数值直接输入 · Windows 便携版 exe | [`/desktop/dist`](./desktop/dist/) |
+| **V2.0** | Electron 桌面版（含图层系统 + API 接入） | `v2.0` 标签 |
+| **V2-lite** | 精简轻量版（移除图层 / API / 搜索框，回归核心调色） | `v2-lite` 标签 |
+| **V1.6** | Electron 桌面应用程序封装版 | [`/desktop`](./desktop/) |
+| **V1.5** | 模块化重构版（HTML + 10 个 JS 模块） | [`/v1.5`](./v1.5/) |
+| **V1** | 首个完整版（单文件 HTML，含图层 / HSL / 混合模式） | `/lr-color-tool.html` |
 | **V1 备份** | V1 存档 | `/lr-color-tool-V1-backup.html` |
 
 ---
