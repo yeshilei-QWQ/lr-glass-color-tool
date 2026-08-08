@@ -15,6 +15,9 @@ let lastToast = null;
 let zoomMode = 'fit';
 let zoom = 1;
 let fitScale = 1;
+// 平移（Lightroom 式拖动手感）：仅当画布超出视口时生效
+let panX = 0, panY = 0;
+let panEnabled = false;
 let histChannel = 'lum'; // 直方图通道
 
 let params = {

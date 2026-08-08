@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function(){
   renderPresets();
   updateHistoryUI();
   updateZoomLabel();
-  initHoldComparison();
+  initViewportGestures();
 });
 
 

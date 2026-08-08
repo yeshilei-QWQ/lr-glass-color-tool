@@ -150,7 +150,7 @@
   }
 
   canvas { display: block; }
-  .canvas-wrap { position: relative; max-width: 100%; max-height: 100%; display: inline-block; line-height: 0; }
+  .canvas-wrap { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); will-change: transform; line-height: 0; }
 
   .view-controls {
     position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
@@ -204,7 +204,7 @@
   .zoom-bar .btn { font-size: 12px; padding: 4px 9px; }
   .zoom-bar #zoomLabel { min-width: 52px; text-align: center; cursor: pointer; }
   .hold-hint {
-    position: absolute; top: 14px; left: 14px;
+    position: absolute; top: 46px; left: 14px;
     background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 8px;
     font-size: 11px; color: var(--text-secondary); z-index: 11; display: none;
     border: 1px solid rgba(255,255,255,0.1); pointer-events: none;
@@ -371,6 +371,13 @@
     </div>
     <div class="drop-overlay hidden" id="dropOverlay">松开鼠标导入图片</div>
     <div class="canvas-wrap hidden" id="canvasWrap">
+      <div id="compareLeft" class="compare-left">
+        <canvas id="origCanvas"></canvas>
+        <div class="tag">原图</div>
+      </div>
+      <canvas id="mainCanvas"></canvas>
+      <div class="compare-divider" id="compareDivider"></div>
+    </div>
       <div class="img-info" id="imgInfo"></div>
       <div class="histogram">
         <canvas id="histogramCanvas" class="hist-canvas"></canvas>
@@ -382,12 +389,6 @@
           <button class="hist-ch-btn" data-ch="b" onclick="setHistogramChannel(&apos;b&apos;)">B</button>
         </div>
       </div>
-      <div id="compareLeft" class="compare-left">
-        <canvas id="origCanvas"></canvas>
-        <div class="tag">原图</div>
-      </div>
-      <canvas id="mainCanvas"></canvas>
-      <div class="compare-divider" id="compareDivider"></div>
       <div class="zoom-bar">
         <button class="btn" onclick="zoomOut()">&#8722;</button>
         <button class="btn" id="zoomLabel" onclick="zoomActual()">100%</button>
@@ -395,7 +396,7 @@
         <button class="btn" onclick="zoomFit()">&#36866;&#24212;</button>
       </div>
       <div class="hold-hint" id="holdHint">&#25353;&#20303;&#39044;&#35272;&#21306;&#26597;&#30475;&#21407;&#22270;</div>
-    </div>
+    
     <div class="view-controls">
       <button class="btn active" id="viewOriginal" onclick="setViewMode('original', this)">原图</button>
       <button class="btn" id="viewEdited" onclick="setViewMode('edited', this)">调整</button>

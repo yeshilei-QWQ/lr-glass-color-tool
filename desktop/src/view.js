@@ -96,6 +96,7 @@ function applyZoom() {
   main.style.width = dispW + 'px';
   main.style.height = dispH + 'px';
   if (orig) { orig.style.width = dispW + 'px'; orig.style.height = dispH + 'px'; }
+  applyPan();
   updateZoomLabel();
 }
 function setZoom(mode, val) {
@@ -127,19 +128,86 @@ function updateZoomLabel() {
 
 // ================== 长按看原图（调整视图下按住画布临时显示原图） ==================
 let holdPrev = null;
-function initHoldComparison() {
-  const main = document.getElementById('mainCanvas');
-  if (!main) return;
-  function release(ev) {
-    document.removeEventListener('mouseup', release);
-    if (holdPrev !== null) { viewMode = holdPrev; holdPrev = null; render(); }
-  }
-  main.addEventListener('mousedown', function (ev) {
-    if (viewMode === 'original' || viewMode !== 'edited') return;
-    holdPrev = viewMode;
-    viewMode = 'original';
-    exitPreview();
-    render();
-    document.addEventListener('mouseup', release);
+function panViewportSize() {
+  const viewport = document.getElementById('viewport');
+  return { w: viewport.clientWidth, h: viewport.clientHeight };
+}
+function currentScale() {
+  if (zoomMode === 'fit') return fitScale;
+  if (zoomMode === 'actual') return 1;
+  return zoom;
+}
+function isPanEnabled() {
+  if (!sourceData) return false;
+  const v = panViewportSize();
+  return Math.floor(imageWidth * currentScale()) > v.w || Math.floor(imageHeight * currentScale()) > v.h;
+}
+function clampPan() {
+  const v = panViewportSize();
+  const dw = Math.floor(imageWidth * currentScale());
+  const dh = Math.floor(imageHeight * currentScale());
+  if (dw <= v.w) panX = 0; else panX = Math.max(v.w - dw, Math.min(0, panX));
+  if (dh <= v.h) panY = 0; else panY = Math.max(v.h - dh, Math.min(0, panY));
+}
+function applyPan() {
+  panEnabled = isPanEnabled();
+  if (!panEnabled) { panX = 0; panY = 0; }
+  clampPan();
+  const wrap = document.getElementById('canvasWrap');
+  if (!wrap) return;
+  wrap.style.transform = 'translate(calc(-50% + ' + panX + 'px), calc(-50% + ' + panY + 'px))';
+}
+/** Lightroom 手感：长按看原图 + 拖动平移 + 滚轮缩放（跟随鼠标） */
+function initViewportGestures() {
+  const wrap = document.getElementById('canvasWrap');
+  if (!wrap) return;
+  let drag = null;
+  wrap.addEventListener('mousedown', function (ev) {
+    if (ev.button !== 0) return;
+    if (ev.target && ev.target.closest && (ev.target.closest('button') || ev.target.closest('.compare-divider'))) return;
+    drag = { x: ev.clientX, y: ev.clientY, px: panX, py: panY, moved: false, held: false };
+    const movable = isPanEnabled();
+    if (viewMode === 'edited' && !movable) {
+      drag.held = true;
+      holdPrev = viewMode;
+      viewMode = 'original';
+      exitPreview();
+      render();
+    }
+    function onMove(ee) {
+      const dx = ee.clientX - drag.x, dy = ee.clientY - drag.y;
+      if (!drag.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        drag.moved = true;
+        if (drag.held) { drag.held = false; holdPrev = null; viewMode = 'edited'; render(); }
+      }
+      if (drag.moved && movable) {
+        panX = drag.px + dx; panY = drag.py + dy;
+        clampPan(); applyPan();
+      }
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      if (drag.held && holdPrev !== null) { viewMode = holdPrev; holdPrev = null; render(); }
+      drag = null;
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
+  wrap.addEventListener('wheel', function (ev) {
+    if (!sourceData) return;
+    ev.preventDefault();
+    const vpRect = document.getElementById('viewport').getBoundingClientRect();
+    const vx = ev.clientX - vpRect.left, vy = ev.clientY - vpRect.top;
+    const cur = currentScale();
+    const ns = Math.max(0.05, Math.min(8, cur * (ev.deltaY < 0 ? 1.25 : 1 / 1.25)));
+    const dw0 = Math.max(1, Math.floor(imageWidth * cur)), dh0 = Math.max(1, Math.floor(imageHeight * cur));
+    const dw1 = Math.max(1, Math.floor(imageWidth * ns)), dh1 = Math.max(1, Math.floor(imageHeight * ns));
+    const cX = (vpRect.width - dw0) / 2 + panX, cY = (vpRect.height - dh0) / 2 + panY;
+    const ppX = (vx - cX) / cur, ppY = (vy - cY) / cur;
+    panX = vx - ppX * ns - (vpRect.width - dw1) / 2;
+    panY = vy - ppY * ns - (vpRect.height - dh1) / 2;
+    zoomMode = 'custom'; zoom = ns;
+    applyZoom();
+  }, { passive: false });
 }
